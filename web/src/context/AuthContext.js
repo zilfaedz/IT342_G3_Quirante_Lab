@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import api from '../services/api';
 
 const AuthContext = createContext();
 
@@ -16,9 +17,26 @@ export const AuthProvider = ({ children }) => {
     setLoading(false);
   }, []);
 
-  const login = (userData) => {
-    localStorage.setItem('user', JSON.stringify(userData));
-    setUser(userData);
+  const login = async (email, password) => {
+    try {
+      const response = await api.post('/auth/login', { email, password });
+      const userData = { email, name: email.split('@')[0] }; // Backend should return user info
+      localStorage.setItem('user', JSON.stringify(userData));
+      setUser(userData);
+      return { success: true };
+    } catch (error) {
+      console.error("Login failed", error);
+      return { success: false, message: error.response?.data?.message || 'Login failed' };
+    }
+  };
+
+  const register = async (name, email, password) => {
+    try {
+      await api.post('/auth/register', { fullName: name, email, password });
+      return { success: true };
+    } catch (error) {
+      return { success: false, message: error.response?.data?.message || 'Registration failed' };
+    }
   };
 
   const logout = () => {
@@ -29,6 +47,7 @@ export const AuthProvider = ({ children }) => {
   const value = {
     user,
     login,
+    register,
     logout,
     loading
   };

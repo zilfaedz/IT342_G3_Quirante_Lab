@@ -1,21 +1,29 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { useAuth } from "../context/AuthContext";
 
 const Register = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [name, setName] = useState('');
+    const { register } = useAuth();
     const navigate = useNavigate();
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         if (password !== confirmPassword) {
             alert("Passwords don't match");
             return;
         }
-        alert('Registration successful! Please login.');
-        navigate('/login');
+
+        const result = await register(name, email, password);
+        if (result.success) {
+            alert('Registration successful! Please login.');
+            navigate('/login');
+        } else {
+            alert(result.message);
+        }
     };
 
     return (

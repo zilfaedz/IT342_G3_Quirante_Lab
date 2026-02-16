@@ -8,11 +8,15 @@ const Login = () => {
     const { login } = useAuth();
     const navigate = useNavigate();
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         if (email && password) {
-            login({ email, name: email.split('@')[0] });
-            navigate('/dashboard');
+            const result = await login(email, password);
+            if (result.success) {
+                navigate('/dashboard');
+            } else {
+                alert(result.message);
+            }
         }
     };
 
