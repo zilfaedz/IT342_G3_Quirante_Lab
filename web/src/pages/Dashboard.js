@@ -1,10 +1,17 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import LogoutModal from '../components/LogoutModal';
 
 const Dashboard = () => {
     const { user, logout } = useAuth();
     const navigate = useNavigate();
+    const [showLogoutModal, setShowLogoutModal] = useState(false);
+
+    const handleLogout = () => {
+        logout();
+        navigate('/');
+    };
 
     // Dynamic date and time
     const today = new Date();
@@ -62,7 +69,7 @@ const Dashboard = () => {
                         <div className="nav-icon">⚙️</div>
                         <span className="nav-label">Settings</span>
                     </a>
-                    <div className="nav-item" onClick={() => { logout(); navigate('/'); }} style={{ marginTop: 'auto' }}>
+                    <div className="nav-item" onClick={() => setShowLogoutModal(true)} style={{ marginTop: 'auto' }}>
                         <div className="nav-icon">🚪</div>
                         <span className="nav-label">Log Out</span>
                     </div>
@@ -465,7 +472,13 @@ const Dashboard = () => {
 
                     </div>
                 </div>{/* /content */}
-            </div>{/* /main */}
+            </div>
+            {/* /main */}
+            <LogoutModal
+                show={showLogoutModal}
+                onClose={() => setShowLogoutModal(false)}
+                onConfirm={handleLogout}
+            />
         </div>
     );
 };

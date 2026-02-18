@@ -1,11 +1,18 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import LogoutModal from '../components/LogoutModal';
 import { useNavigate } from 'react-router-dom';
 
 const Profile = () => {
     const { user, logout } = useAuth();
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState('overview');
+    const [showLogoutModal, setShowLogoutModal] = useState(false);
+
+    const handleLogout = () => {
+        logout();
+        navigate('/');
+    };
 
     const switchTab = (tab) => {
         setActiveTab(tab);
@@ -54,7 +61,7 @@ const Profile = () => {
                         <div className="nav-icon">⚙️</div>
                         <span className="nav-label">Settings</span>
                     </a>
-                    <div className="nav-item" onClick={() => { logout(); navigate('/'); }} style={{ marginTop: 'auto' }}>
+                    <div className="nav-item" onClick={() => setShowLogoutModal(true)} style={{ marginTop: 'auto' }}>
                         <div className="nav-icon">🚪</div>
                         <span className="nav-label">Log Out</span>
                     </div>
@@ -527,6 +534,11 @@ const Profile = () => {
                     </div>{/* /page-body */}
                 </div>{/* /content */}
             </div>{/* /main */}
+            <LogoutModal
+                show={showLogoutModal}
+                onClose={() => setShowLogoutModal(false)}
+                onConfirm={handleLogout}
+            />
         </div>
     );
 };

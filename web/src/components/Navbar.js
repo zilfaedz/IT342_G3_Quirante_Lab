@@ -1,18 +1,20 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import LogoutModal from './LogoutModal';
 
 const Navbar = () => {
     const { user, logout } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
+    const [showLogoutModal, setShowLogoutModal] = useState(false);
 
     // Hide navbar on login and register pages
     if (['/login', '/register'].includes(location.pathname)) {
         return null;
     }
 
-    const handleLogout = () => {
+    const confirmLogout = () => {
         logout();
         navigate('/');
     };
@@ -31,11 +33,16 @@ const Navbar = () => {
                         <>
                             <span className="nav-user-greeting">Hi, {user?.firstName || user?.name || (user?.email && user.email.split('@')[0]) || 'User'}</span>
                             <Link to="/dashboard" className="nav-link">Dashboard</Link>
-                            <button onClick={handleLogout} className="nav-btn">Logout</button>
+                            <button onClick={() => setShowLogoutModal(true)} className="nav-btn">Logout</button>
                         </>
                     )}
                 </div>
             </div>
+            <LogoutModal
+                show={showLogoutModal}
+                onClose={() => setShowLogoutModal(false)}
+                onConfirm={confirmLogout}
+            />
         </nav>
     );
 };

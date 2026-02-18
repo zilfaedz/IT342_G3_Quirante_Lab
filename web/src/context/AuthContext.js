@@ -11,7 +11,8 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     const storedUser = localStorage.getItem('user') || sessionStorage.getItem('user');
-    if (storedUser) {
+    const storedToken = localStorage.getItem('token') || sessionStorage.getItem('token');
+    if (storedUser && storedToken) {
       setUser(JSON.parse(storedUser));
     }
     setLoading(false);
@@ -20,13 +21,15 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password, rememberMe) => {
     try {
       const response = await api.post('/auth/login', { email, password });
-      const { firstName, lastName } = response.data;
+      const { firstName, lastName, token } = response.data;
       const userData = { email, firstName, lastName };
 
       if (rememberMe) {
         localStorage.setItem('user', JSON.stringify(userData));
+        localStorage.setItem('token', token);
       } else {
         sessionStorage.setItem('user', JSON.stringify(userData));
+        sessionStorage.setItem('token', token);
       }
 
       setUser(userData);
@@ -48,7 +51,9 @@ export const AuthProvider = ({ children }) => {
 
   const logout = () => {
     localStorage.removeItem('user');
+    localStorage.removeItem('token');
     sessionStorage.removeItem('user');
+    sessionStorage.removeItem('token');
     setUser(null);
   };
 
