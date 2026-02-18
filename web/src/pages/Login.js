@@ -5,13 +5,14 @@ import { useAuth } from '../context/AuthContext';
 const Login = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [rememberMe, setRememberMe] = useState(false);
     const { login } = useAuth();
     const navigate = useNavigate();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (email && password) {
-            const result = await login(email, password);
+            const result = await login(email, password, rememberMe);
             if (result.success) {
                 navigate('/dashboard');
             } else {
@@ -21,45 +22,52 @@ const Login = () => {
     };
 
     return (
-        <div className="split-screen">
-            <div className="left-panel">
-                <div style={{ maxWidth: '400px', margin: '0 auto', width: '100%' }}>
-                    <h1 className="auth-title">Welcome back!</h1>
-                    <p className="auth-subtitle">Enter your credentials to continue your academic journey</p>
+        <>
+            <div class="circle circle-2"></div>
+            <div style={{ maxWidth: '400px', margin: '0 auto', width: '100%' }}>
+                <a href="/" style={{ color: '#C17A63', textDecoration: 'none', fontSize: '0.9rem', marginBottom: '2rem', display: 'inline-block' }}>
+                    ← Home Page
+                </a>
+                <h1 className="auth-title">Log in</h1>
+                <p className="auth-subtitle">Please enter your credentials to continue</p>
 
-                    <form className="auth-form" onSubmit={handleSubmit}>
-                        <div className="form-group">
-                            <label>Email Address</label>
-                            <input
-                                type="email"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                required
-                            />
-                        </div>
-                        <div className="form-group">
-                            <label>Password</label>
-                            <input
-                                type="password"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                required
-                            />
-                        </div>
-                        <button type="submit" className="submit-btn">Login</button>
-                    </form>
-
-                    <div className="auth-footer">
-                        Don't have an account? <Link to="/register">Create here</Link>
+                <form className="auth-form" onSubmit={handleSubmit}>
+                    <div className="form-group">
+                        <label>Email</label>
+                        <input
+                            type="text"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            required
+                        />
                     </div>
+                    <div className="form-group">
+                        <label>Password</label>
+                        <input
+                            type="password"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            required
+                        />
+                    </div>
+                    <div className="remember-me">
+                        <input
+                            type="checkbox"
+                            id="remember"
+                            checked={rememberMe}
+                            onChange={(e) => setRememberMe(e.target.checked)}
+                        />
+                        <label htmlFor="remember">Remember me</label>
+                        <button type="button" className="forgot-password" onClick={() => alert('Password reset not implemented yet')}>forgot password?</button>
+                    </div>
+                    <button type="submit" className="submit-btn">Log in</button>
+                </form>
+
+                <div className="auth-footer">
+                    Don't have an account? <Link to="/register">Create here</Link>
                 </div>
             </div>
-
-            <div className="right-panel">
-                <h1 className="brand-title">Web name</h1>
-                <p className="brand-tagline">Simplify your shared living experience.</p>
-            </div>
-        </div>
+        </>
     );
 };
 

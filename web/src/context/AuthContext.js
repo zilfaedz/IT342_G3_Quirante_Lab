@@ -10,18 +10,25 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const storedUser = localStorage.getItem('user');
+    const storedUser = localStorage.getItem('user') || sessionStorage.getItem('user');
     if (storedUser) {
       setUser(JSON.parse(storedUser));
     }
     setLoading(false);
   }, []);
 
-  const login = async (email, password) => {
+  const login = async (email, password, rememberMe) => {
     try {
       const response = await api.post('/auth/login', { email, password });
-      const userData = { email, name: email.split('@')[0] }; // Backend should return user info
-      localStorage.setItem('user', JSON.stringify(userData));
+      const { firstName, lastName } = response.data;
+      const userData = { email, firstName, lastName };
+
+      if (rememberMe) {
+        localStorage.setItem('user', JSON.stringify(userData));
+      } else {
+        sessionStorage.setItem('user', JSON.stringify(userData));
+      }
+
       setUser(userData);
       return { success: true };
     } catch (error) {
@@ -30,9 +37,9 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const register = async (name, email, password) => {
+  const register = async (firstName, lastName, email, password) => {
     try {
-      await api.post('/auth/register', { fullName: name, email, password });
+      await api.post('/auth/register', { firstName, lastName, email, password });
       return { success: true };
     } catch (error) {
       return { success: false, message: error.response?.data?.message || 'Registration failed' };
@@ -41,6 +48,7 @@ export const AuthProvider = ({ children }) => {
 
   const logout = () => {
     localStorage.removeItem('user');
+    sessionStorage.removeItem('user');
     setUser(null);
   };
 

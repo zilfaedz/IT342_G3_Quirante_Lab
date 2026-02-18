@@ -36,9 +36,15 @@ public class AuthController {
         String email = credentials.get("email");
         String password = credentials.get("password");
 
+        // Try to find user by email
         Optional<User> user = userRepository.findByEmail(email);
+
         if (user.isPresent() && passwordEncoder.matches(password, user.get().getPassword())) {
-            return ResponseEntity.ok(Map.of("message", "Login successful", "email", email));
+            return ResponseEntity.ok(Map.of(
+                    "message", "Login successful",
+                    "email", user.get().getEmail(),
+                    "firstName", user.get().getFirstName() != null ? user.get().getFirstName() : "",
+                    "lastName", user.get().getLastName() != null ? user.get().getLastName() : ""));
         }
         return ResponseEntity.status(401).body(Map.of("message", "Invalid credentials"));
     }

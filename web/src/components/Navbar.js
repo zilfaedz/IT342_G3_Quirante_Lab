@@ -14,7 +14,7 @@ const Navbar = () => {
 
     const handleLogout = () => {
         logout();
-        navigate('/login');
+        navigate('/');
     };
 
     return (
@@ -29,8 +29,8 @@ const Navbar = () => {
                         </>
                     ) : (
                         <>
+                            <span className="nav-user-greeting">Hi, {user?.firstName || user?.name || (user?.email && user.email.split('@')[0]) || 'User'}</span>
                             <Link to="/dashboard" className="nav-link">Dashboard</Link>
-                            <Link to="/profile" className="nav-link">Profile</Link>
                             <button onClick={handleLogout} className="nav-btn">Logout</button>
                         </>
                     )}

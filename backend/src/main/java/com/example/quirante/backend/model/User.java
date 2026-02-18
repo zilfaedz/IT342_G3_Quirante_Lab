@@ -15,6 +15,8 @@ public class User {
     @Column(nullable = false)
     private String password;
 
+    private String firstName;
+    private String lastName;
     private String fullName;
 
     public Long getId() {
@@ -41,11 +43,34 @@ public class User {
         this.password = password;
     }
 
+    public String getFirstName() {
+        return firstName;
+    }
+
+    public void setFirstName(String firstName) {
+        this.firstName = firstName;
+    }
+
+    public String getLastName() {
+        return lastName;
+    }
+
+    public void setLastName(String lastName) {
+        this.lastName = lastName;
+    }
+
     public String getFullName() {
         return fullName;
     }
 
     public void setFullName(String fullName) {
         this.fullName = fullName;
+    }
+
+    @PrePersist
+    @PreUpdate
+    private void updateFullName() {
+        this.fullName = (firstName != null ? firstName : "") + " " + (lastName != null ? lastName : "");
+        this.fullName = this.fullName.trim();
     }
 }
