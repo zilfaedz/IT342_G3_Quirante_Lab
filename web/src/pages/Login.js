@@ -25,7 +25,7 @@ const Login = () => {
         <>
             <div class="circle circle-2"></div>
             <div style={{ maxWidth: '400px', margin: '0 auto', width: '100%' }}>
-                <a href="/" style={{ color: '#C17A63', textDecoration: 'none', fontSize: '0.9rem', marginBottom: '2rem', display: 'inline-block' }}>
+                <a href="/" style={{ color: '#388E3C', textDecoration: 'none', fontSize: '0.9rem', marginBottom: '2rem', display: 'inline-block' }}>
                     ← Home Page
                 </a>
                 <h1 className="auth-title">Log in</h1>
