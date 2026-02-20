@@ -19,6 +19,8 @@
 
 ## IN-PROGRESS
 
+- [ ] Add a layout wrapper for side bar navigation.
+- [ ] Profile details should be editable.
 - [ ] Forgot Password feature (email verification & reset token)
 - [ ] Remember Me feature (persistent login session)
 - [ ] Email validation during registration
@@ -29,6 +31,7 @@
 
 ## TODO (Android Studio - Kotlin Mobile App)
 
+- [ ] Add mata mata sa password
 - [ ] Implement API connection to Node.js backend
 - [ ] Implement user authentication (login & register)
 - [ ] Store authentication token securely

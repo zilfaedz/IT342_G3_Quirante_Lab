@@ -13,7 +13,7 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/auth")
-@CrossOrigin(origins = "http://localhost:3000") // Allow frontend
+@CrossOrigin(origins = { "http://localhost:3000", "http://localhost:3001" }) // Allow frontend
 public class AuthController {
 
     @Autowired
@@ -49,8 +49,13 @@ public class AuthController {
                     "message", "Login successful",
                     "token", token,
                     "email", user.get().getEmail(),
+                    "role", user.get().getRole(),
                     "firstName", user.get().getFirstName() != null ? user.get().getFirstName() : "",
-                    "lastName", user.get().getLastName() != null ? user.get().getLastName() : ""));
+                    "lastName", user.get().getLastName() != null ? user.get().getLastName() : "",
+                    "fullName", user.get().getFullName() != null ? user.get().getFullName() : "",
+                    "address", user.get().getAddress() != null ? user.get().getAddress() : "",
+                    "contactNumber", user.get().getContactNumber() != null ? user.get().getContactNumber() : "",
+                    "barangay", user.get().getBarangay() != null ? user.get().getBarangay() : ""));
         }
         throw new org.springframework.security.authentication.BadCredentialsException("Invalid credentials");
     }

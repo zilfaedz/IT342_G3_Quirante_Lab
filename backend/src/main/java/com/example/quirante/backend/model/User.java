@@ -18,6 +18,12 @@ public class User {
     private String firstName;
     private String lastName;
     private String fullName;
+    private String address;
+    private String contactNumber;
+    private String barangay;
+
+    @Column(nullable = false)
+    private String role = "RESIDENT"; // default role
 
     public Long getId() {
         return id;
@@ -65,6 +71,38 @@ public class User {
 
     public void setFullName(String fullName) {
         this.fullName = fullName;
+    }
+
+    public String getAddress() {
+        return address;
+    }
+
+    public void setAddress(String address) {
+        this.address = address;
+    }
+
+    public String getContactNumber() {
+        return contactNumber;
+    }
+
+    public void setContactNumber(String contactNumber) {
+        this.contactNumber = contactNumber;
+    }
+
+    public String getBarangay() {
+        return barangay;
+    }
+
+    public void setBarangay(String barangay) {
+        this.barangay = barangay;
+    }
+
+    public String getRole() {
+        return role;
+    }
+
+    public void setRole(String role) {
+        this.role = role;
     }
 
     @PrePersist

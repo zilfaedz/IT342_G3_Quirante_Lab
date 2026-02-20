@@ -21,8 +21,8 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password, rememberMe) => {
     try {
       const response = await api.post('/auth/login', { email, password });
-      const { firstName, lastName, token } = response.data;
-      const userData = { email, firstName, lastName };
+      const { firstName, lastName, fullName, role, address, contactNumber, barangay, token } = response.data;
+      const userData = { email, firstName, lastName, fullName, role, address, contactNumber, barangay };
 
       if (rememberMe) {
         localStorage.setItem('user', JSON.stringify(userData));
@@ -40,9 +40,9 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const register = async (firstName, lastName, email, password) => {
+  const register = async (firstName, lastName, email, password, address, contactNumber, barangay) => {
     try {
-      await api.post('/auth/register', { firstName, lastName, email, password });
+      await api.post('/auth/register', { firstName, lastName, email, password, address, contactNumber, barangay });
       return { success: true };
     } catch (error) {
       return { success: false, message: error.response?.data?.message || 'Registration failed' };
@@ -57,11 +57,24 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
   };
 
+  const updateUser = (newUserData) => {
+    const updatedUser = { ...user, ...newUserData };
+    setUser(updatedUser);
+
+    // Update local/session storage
+    if (localStorage.getItem('user')) {
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+    } else if (sessionStorage.getItem('user')) {
+      sessionStorage.setItem('user', JSON.stringify(updatedUser));
+    }
+  };
+
   const value = {
     user,
     login,
     register,
     logout,
+    updateUser,
     loading
   };
 

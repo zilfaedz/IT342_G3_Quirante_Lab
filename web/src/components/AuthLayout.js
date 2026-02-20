@@ -26,7 +26,7 @@ const AuthLayout = () => {
             <div className="right-panel">
                 <div className="circle circle-1"></div>
                 <div className={`brand-content${animated ? ' no-animate' : ''}`}>
-                    <h1 className="brand-title">Welcome</h1>
+                    <h1 className="greeting">Welcome</h1>
                     <h3 className="brand-headline">Your Headline Name</h3>
                     <p className="brand-tagline">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Etiam fermentum vehicula dui, non feugiat nibh euismod vitae.</p>
                 </div>

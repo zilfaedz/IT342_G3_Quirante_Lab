@@ -1,16 +1,114 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import LogoutModal from '../components/LogoutModal';
+import Notification from '../components/Notification';
+import api from '../services/api';
+import Layout from '../components/Layout';
 
 const Dashboard = () => {
-    const { user, logout } = useAuth();
+    const { user } = useAuth();
     const navigate = useNavigate();
-    const [showLogoutModal, setShowLogoutModal] = useState(false);
+    const [notification, setNotification] = useState({ show: false, message: '', type: '' });
 
-    const handleLogout = () => {
-        logout();
-        navigate('/');
+    const [dashboardData, setDashboardData] = useState({
+        weatherAlerts: [],
+        evacuationCenters: [],
+        hotlines: []
+    });
+
+    const [reports, setReports] = useState([]);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    // Report form state
+    const [reportForm, setReportForm] = useState({
+        description: '',
+        location: '',
+        incidentType: 'flood',
+        photo: null
+    });
+
+    useEffect(() => {
+        const fetchDashboardData = async () => {
+            try {
+                const res = await api.get('/dashboard/data');
+                setDashboardData(res.data);
+            } catch (err) {
+                console.error("Failed to fetch dashboard data", err);
+            }
+        };
+
+        const fetchReports = async () => {
+            try {
+                const res = await api.get('/reports');
+                setReports(res.data);
+            } catch (err) {
+                console.error("Failed to fetch reports", err);
+            }
+        };
+
+        fetchDashboardData();
+        fetchReports();
+    }, []);
+
+    const handleReportSubmit = async (e) => {
+        e.preventDefault();
+        if (!reportForm.description || !reportForm.location) {
+            setNotification({ show: true, message: 'Description and location are required.', type: 'error' });
+            return;
+        }
+
+        setIsSubmitting(true);
+        const formData = new FormData();
+        formData.append('description', reportForm.description);
+        formData.append('location', reportForm.location);
+        formData.append('incidentType', reportForm.incidentType);
+        if (reportForm.photo) {
+            formData.append('photo', reportForm.photo);
+        }
+
+        try {
+            // We use standard fetch or axios with multipart form data
+            const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+            const response = await fetch('http://localhost:8080/api/reports', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                },
+                body: formData
+            });
+
+            if (response.ok) {
+                const savedReport = await response.json();
+                setNotification({ show: true, message: 'Report submitted successfully!', type: 'success' });
+                setReports([savedReport.report, ...reports]);
+                setReportForm({ description: '', location: '', incidentType: 'flood', photo: null });
+            } else {
+                setNotification({ show: true, message: 'Failed to submit report.', type: 'error' });
+            }
+        } catch (error) {
+            console.error("Error submitting report", error);
+            setNotification({ show: true, message: 'An error occurred.', type: 'error' });
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    // Modal control
+    const [isModalOpen, setIsModalOpen] = useState(false);
+
+    useEffect(() => {
+        // Reset modal when component mounts
+        setIsModalOpen(false);
+        setReportForm({ description: '', location: '', incidentType: 'flood', photo: null });
+    }, []);
+
+    const openModal = () => setIsModalOpen(true);
+    const closeModal = () => setIsModalOpen(false);
+
+    const handleBackdropClick = (e) => {
+        if (e.target.classList.contains('modal-overlay')) {
+            closeModal();
+        }
     };
 
     // Dynamic date and time
@@ -23,463 +121,343 @@ const Dashboard = () => {
     });
 
     return (
-        <div className="dashboard-wrapper">
-            {/* ─── SIDEBAR ─── */}
-            <aside className="sidebar">
-                <div className="sidebar-logo">
-                    <a className="logo-mark" href="#">GroundWork</a>
-                    <div className="logo-sub">Response Dashboard</div>
+        <Layout>
+            {/* TOPBAR */}
+            <header className="topbar">
+                <div className="topbar-left">
+                    <h1>Dashboard</h1>
+                    <p>{user?.barangay ? `Barangay ${user.barangay}` : 'Barangay San Miguel'} · {formattedDate}</p>
                 </div>
-
-                <nav className="sidebar-nav">
-                    <div className="sidebar-section-label">Operations</div>
-                    <a href="#" className="nav-item active">
-                        <div className="nav-icon">🏠</div>
-                        <span className="nav-label">Overview</span>
-                    </a>
-                    <a href="#" className="nav-item alert-item">
-                        <div className="nav-icon">🚨</div>
-                        <span className="nav-label">Active Alerts</span>
-                        <span className="nav-badge nav-badge-red">3</span>
-                    </a>
-                    <a href="#" className="nav-item">
-                        <div className="nav-icon">📍</div>
-                        <span className="nav-label">Incidents</span>
-                        <span className="nav-badge">7</span>
-                    </a>
-                    <a href="#" className="nav-item">
-                        <div className="nav-icon">🏕️</div>
-                        <span className="nav-label">Shelters</span>
-                    </a>
-
-                    <div className="sidebar-section-label">Community</div>
-                    <a href="#" className="nav-item">
-                        <div className="nav-icon">🤝</div>
-                        <span className="nav-label">Volunteers</span>
-                    </a>
-                    <a href="#" className="nav-item">
-                        <div className="nav-icon">📦</div>
-                        <span className="nav-label">Supplies</span>
-                    </a>
-                    <a href="#" className="nav-item">
-                        <div className="nav-icon">🗺️</div>
-                        <span className="nav-label">Zone Map</span>
-                    </a>
-                    <a href="#" className="nav-item">
-                        <div className="nav-icon">⚙️</div>
-                        <span className="nav-label">Settings</span>
-                    </a>
-                    <div className="nav-item" onClick={() => setShowLogoutModal(true)} style={{ marginTop: 'auto' }}>
-                        <div className="nav-icon">🚪</div>
-                        <span className="nav-label">Log Out</span>
-                    </div>
-                </nav>
-
-                <div className="sidebar-bottom">
-                    <div
-                        className="user-row"
-                        onClick={() => navigate('/profile')}
-                        style={{ cursor: 'pointer' }}
-                    >
-                        <div className="user-avatar">{user?.firstName?.charAt(0) || user?.email?.charAt(0) || 'U'}</div>
-                        <div className="user-info">
-                            <div className="user-name">{user?.firstName || 'User'} — Coord.</div>
-                            <div className="user-role">Zone 4 Lead</div>
+                <div className="topbar-right">
+                    {dashboardData.weatherAlerts.length > 0 && (
+                        <div className="alert-status">
+                            <div className="pulse-dot"></div>
+                            ACTIVE ALERTS ({dashboardData.weatherAlerts.length})
                         </div>
-                        <div className="user-chevron">›</div>
-                    </div>
-                </div>
-            </aside>
-
-            {/* ─── MAIN ─── */}
-            <div className="dashboard-main">
-
-                {/* TOPBAR */}
-                <header className="topbar">
-                    <div>
-                        <div className="topbar-title">Response Overview</div>
-                        <div className="topbar-date">{formattedDate}</div>
-                    </div>
-                    <div className="topbar-spacer"></div>
-                    <div className="topbar-alert">
-                        <span className="alert-blink"></span>
-                        3 Active Incidents
-                    </div>
-                    <div className="topbar-icon-btn">
-                        🔔
+                    )}
+                    <button className="icon-btn" title="Notifications">
+                        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
                         <span className="notif-dot"></span>
+                    </button>
+                </div>
+            </header>
+
+            <div className="content">
+                {/* ALERT BANNER */}
+                {dashboardData.weatherAlerts.map((alert, index) => (
+                    <div key={index} className="alert-banner">
+                        <div className="alert-icon-wrap">
+                            <svg width="22" height="22" fill="none" stroke="white" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                        </div>
+                        <div>
+                            <h3>⚠ {alert.type}</h3>
+                            <p>{alert.message}</p>
+                        </div>
+                        <button className="btn-sm">View Advisory</button>
                     </div>
-                    <button className="topbar-btn">＋ Report Incident</button>
-                </header>
+                ))}
 
-                {/* CONTENT */}
-                <div className="dashboard-content">
-
-                    {/* ACTIVE ALERT BANNER */}
-                    <div className="alert-banner">
-                        <div className="alert-banner-icon">🔥</div>
-                        <div className="alert-banner-text">
-                            <div className="alert-banner-title">⚠ ACTIVE — Wildfire Advisory: Cedar County</div>
-                            <div className="alert-banner-sub">Evacuation orders in effect for <strong>Zones 3, 4 & 5</strong>. 847 residents affected. Last updated 12 min ago.</div>
+                {/* STATS */}
+                <div className="stats-grid">
+                    <div className="stat-card green">
+                        <div className="stat-icon">
+                            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /></svg>
                         </div>
-                        <button className="alert-banner-action">View Full Alert</button>
+                        <div className="stat-value">{dashboardData.evacuationCenters.filter(c => c.status !== 'Full').length}</div>
+                        <div className="stat-label">Evacuation Centers Open</div>
+                        <div className="stat-delta delta-neutral">of {dashboardData.evacuationCenters.length} total</div>
+                    </div>
+                    <div className="stat-card red">
+                        <div className="stat-icon">
+                            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
+                        </div>
+                        <div className="stat-value">{reports.filter(r => r.status === 'PENDING').length}</div>
+                        <div className="stat-label">Pending Incident Reports</div>
+                        <div className="stat-delta delta-down">↑ updates live</div>
+                    </div>
+                    <div className="stat-card amber">
+                        <div className="stat-icon">
+                            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0" /></svg>
+                        </div>
+                        <div className="stat-value">98%</div>
+                        <div className="stat-label">Response Readiness</div>
+                        <div className="stat-delta delta-up">↑ 2% vs last week</div>
+                    </div>
+                    <div className="stat-card blue">
+                        <div className="stat-icon">
+                            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
+                        </div>
+                        <div className="stat-value">{dashboardData.hotlines.length}</div>
+                        <div className="stat-label">Active Hotlines</div>
+                        <div className="stat-delta delta-neutral">Available 24/7</div>
+                    </div>
+                </div>
+
+                <div className="two-col">
+                    {/* WEATHER */}
+                    <div className="panel">
+                        <div className="panel-header">
+                            <div className="panel-title">
+                                <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" /></svg>
+                                Local Weather
+                            </div>
+                            <span className="panel-action">Details →</span>
+                        </div>
+                        <div className="panel-body">
+                            <div className="weather-main">
+                                <div className="weather-icon-big">⛅</div>
+                                <div>
+                                    <div className="weather-temp">29°C</div>
+                                    <div className="weather-desc">Partly Cloudy · San Miguel</div>
+                                </div>
+                            </div>
+                            <div className="weather-details">
+                                <div className="w-detail">
+                                    <span className="w-detail-label">Humidity</span>
+                                    <span className="w-detail-value">72%</span>
+                                </div>
+                                <div className="w-detail">
+                                    <span className="w-detail-label">Wind Speed</span>
+                                    <span className="w-detail-value">14 km/h</span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
-                    {/* STATS */}
-                    <div className="stats-row">
-                        <div className="stat-card c1">
-                            <div className="stat-top">
-                                <span className="stat-label">Active Incidents</span>
-                                <div className="stat-icon">🚨</div>
+                    {/* DISASTER ALERTS TRAY */}
+                    <div className="panel">
+                        <div className="panel-header">
+                            <div className="panel-title">
+                                <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                                NDRRMC Updates
                             </div>
-                            <div className="stat-value">3</div>
-                            <div className="stat-delta urgent">↑ 2 since yesterday</div>
+                            <span className="panel-action">View All →</span>
                         </div>
-                        <div className="stat-card c2">
-                            <div className="stat-top">
-                                <span className="stat-label">Displaced Residents</span>
-                                <div className="stat-icon">👥</div>
+                        <div className="panel-body">
+                            <div className="alert-list">
+                                {dashboardData.weatherAlerts.length > 0 ? (
+                                    dashboardData.weatherAlerts.slice(0, 3).map((alert, idx) => (
+                                        <div key={idx} className={`alert-item level-${alert.severity.toLowerCase()}`}>
+                                            <div className="alert-level-dot"></div>
+                                            <div>
+                                                <div className="alert-item-title">{alert.type}</div>
+                                                <div className="alert-item-desc">{alert.message}</div>
+                                            </div>
+                                            <span className="alert-time">Active</span>
+                                        </div>
+                                    ))
+                                ) : (
+                                    <div style={{ textAlign: 'center', color: 'var(--text-muted)', paddingTop: '20px' }}>
+                                        No active disaster alerts.
+                                    </div>
+                                )}
                             </div>
-                            <div className="stat-value">847</div>
-                            <div className="stat-delta urgent">↑ 212 in last 2 hrs</div>
                         </div>
-                        <div className="stat-card c3">
-                            <div className="stat-top">
-                                <span className="stat-label">Active Volunteers</span>
-                                <div className="stat-icon">🤝</div>
+                    </div>
+                </div>
+
+                <div className="three-col">
+                    {/* RECENT INCIDENT REPORTS */}
+                    <div className="panel">
+                        <div className="panel-header">
+                            <div className="panel-title">
+                                <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
+                                Community Incident Reports
                             </div>
-                            <div className="stat-value">134</div>
-                            <div className="stat-delta up">↑ 41 mobilized today</div>
                         </div>
-                        <div className="stat-card c4">
-                            <div className="stat-top">
-                                <span className="stat-label">Shelter Capacity</span>
-                                <div className="stat-icon">🏕️</div>
+                        <div className="panel-body" style={{ padding: '12px' }}>
+                            <div className="report-list">
+                                {reports.length > 0 ? (
+                                    reports.slice(0, 4).map((r) => {
+                                        let icon = '📢';
+                                        let badgeColor = 'tag-pending';
+                                        let typeClass = 'type-flood';
+                                        if (r.status === 'RESPONDING') badgeColor = 'tag-responding';
+                                        if (r.status === 'RESOLVED') badgeColor = 'tag-resolved';
+
+                                        if (r.incidentType?.toLowerCase() === 'fire') { icon = '🔥'; typeClass = 'type-power'; }
+                                        else if (r.incidentType?.toLowerCase() === 'accident') { icon = '💥'; typeClass = 'type-trapped'; }
+                                        else if (r.incidentType?.toLowerCase() === 'medical') { icon = '🚑'; typeClass = 'type-flood'; }
+
+                                        return (
+                                            <div key={r.id} className="report-item">
+                                                <div className={`report-type-icon ${typeClass}`}>{icon}</div>
+                                                <div className="report-info">
+                                                    <div className="report-title">{r.incidentType.toUpperCase()} INCIDENT</div>
+                                                    <div className="report-location">
+                                                        <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                                                        {r.location}
+                                                    </div>
+                                                    <div className="report-desc">{r.description}</div>
+                                                    <div className="report-meta">
+                                                        <span className={`report-tag ${badgeColor}`}>{r.status}</span>
+                                                        <div className="report-actions">
+                                                            <button className="btn-xs btn-respond">Respond</button>
+                                                            <button className="btn-xs btn-view">Details</button>
+                                                        </div>
+                                                        <span className="report-time">
+                                                            {new Date(r.timestamp).toLocaleDateString()}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        );
+                                    })
+                                ) : (
+                                    <div style={{ textAlign: 'center', color: 'var(--text-muted)', paddingTop: '30px', paddingBottom: '30px' }}>
+                                        No recent reports.
+                                    </div>
+                                )}
                             </div>
-                            <div className="stat-value">68%</div>
-                            <div className="stat-delta neutral">across 5 open sites</div>
                         </div>
                     </div>
 
-                    {/* GRID ROW */}
-                    <div className="grid-row">
+                    <div>
+                        {/* EVACUATION CENTERS */}
+                        <div className="panel" style={{ marginBottom: '20px' }}>
+                            <div className="panel-header">
+                                <div className="panel-title">
+                                    <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
+                                    Evacuation Centers
+                                </div>
+                                <span className="panel-action">Map View</span>
+                            </div>
+                            <div className="panel-body">
+                                <div className="evac-list">
+                                    {dashboardData.evacuationCenters.slice(0, 3).map((c, i) => (
+                                        <div key={i} className="evac-item">
+                                            <div className="evac-icon">
+                                                <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
+                                            </div>
+                                            <div>
+                                                <div className="evac-name">{c.name}</div>
+                                                <div className="evac-meta">Capacity: {c.capacity}</div>
+                                            </div>
+                                            <span className={`evac-status status-${c.status.toLowerCase()}`}>{c.status}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
 
-                        {/* INCIDENTS TABLE */}
+                        {/* HOTLINES */}
                         <div className="panel">
                             <div className="panel-header">
-                                <span className="panel-title">Active Incidents</span>
-                                <a href="#" className="panel-action">Full incident log →</a>
+                                <div className="panel-title">
+                                    <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
+                                    Emergency Hotlines
+                                </div>
                             </div>
-                            <div className="table-wrap">
-                                <table>
-                                    <thead>
-                                        <tr>
-                                            <th>Incident</th>
-                                            <th>Type</th>
-                                            <th>Location</th>
-                                            <th>Priority</th>
-                                            <th>Reported</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr>
-                                            <td>
-                                                <div className="incident-name">
-                                                    <div className="incident-dot id-red"></div>
-                                                    <div>
-                                                        <div className="incident-name-text">Cedar Ridge Wildfire</div>
-                                                        <div className="incident-sub">Zones 3–5 evacuated</div>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td><span className="type-pill tp-fire">Wildfire</span></td>
-                                            <td>Cedar County, N</td>
-                                            <td><span className="priority-tag pr-critical">Critical</span></td>
-                                            <td>6h ago</td>
-                                        </tr>
-                                        <tr>
-                                            <td>
-                                                <div className="incident-name">
-                                                    <div className="incident-dot id-amber"></div>
-                                                    <div>
-                                                        <div className="incident-name-text">River Rd Flash Flood</div>
-                                                        <div className="incident-sub">Road closures active</div>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td><span className="type-pill tp-flood">Flood</span></td>
-                                            <td>River Rd, SE</td>
-                                            <td><span className="priority-tag pr-high">High</span></td>
-                                            <td>3h ago</td>
-                                        </tr>
-                                        <tr>
-                                            <td>
-                                                <div className="incident-name">
-                                                    <div className="incident-dot id-amber"></div>
-                                                    <div>
-                                                        <div className="incident-name-text">Maple St Power Outage</div>
-                                                        <div className="incident-sub">~340 homes affected</div>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td><span className="type-pill tp-medical">Utility</span></td>
-                                            <td>Maple St, W</td>
-                                            <td><span className="priority-tag pr-high">High</span></td>
-                                            <td>5h ago</td>
-                                        </tr>
-                                        <tr>
-                                            <td>
-                                                <div className="incident-name">
-                                                    <div className="incident-dot id-green"></div>
-                                                    <div>
-                                                        <div className="incident-name-text">Hillside Shelter Request</div>
-                                                        <div className="incident-sub">12 families need housing</div>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td><span className="type-pill tp-shelter">Shelter</span></td>
-                                            <td>Hillside, Zone 4</td>
-                                            <td><span className="priority-tag pr-medium">Medium</span></td>
-                                            <td>1h ago</td>
-                                        </tr>
-                                        <tr>
-                                            <td>
-                                                <div className="incident-name">
-                                                    <div className="incident-dot id-green"></div>
-                                                    <div>
-                                                        <div className="incident-name-text">Senior Center Med Check</div>
-                                                        <div className="incident-sub">Wellness rounds needed</div>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td><span className="type-pill tp-medical">Medical</span></td>
-                                            <td>Oak Ave, Central</td>
-                                            <td><span className="priority-tag pr-medium">Medium</span></td>
-                                            <td>2h ago</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-
-                        {/* ACTIVITY FEED */}
-                        <div className="panel">
-                            <div className="panel-header">
-                                <span className="panel-title">Live Updates</span>
-                                <a href="#" className="panel-action">Clear</a>
-                            </div>
-                            <div className="activity-list">
-                                <div className="activity-item">
-                                    <div className="activity-dot-col">
-                                        <div className="a-dot a-dot-alert"></div>
-                                        <div className="a-line"></div>
-                                    </div>
-                                    <div className="activity-body">
-                                        <div className="activity-text"><strong>Zones 3–5</strong> evacuation order upgraded to mandatory</div>
-                                        <div className="activity-time">12 minutes ago</div>
-                                    </div>
-                                </div>
-                                <div className="activity-item">
-                                    <div className="activity-dot-col">
-                                        <div className="a-dot a-dot-volunteer"></div>
-                                        <div className="a-line"></div>
-                                    </div>
-                                    <div className="activity-body">
-                                        <div className="activity-text"><strong>41 volunteers</strong> checked in at Central Command</div>
-                                        <div className="activity-time">28 minutes ago</div>
-                                    </div>
-                                </div>
-                                <div className="activity-item">
-                                    <div className="activity-dot-col">
-                                        <div className="a-dot a-dot-resolve"></div>
-                                        <div className="a-line"></div>
-                                    </div>
-                                    <div className="activity-body">
-                                        <div className="activity-text"><strong>Eastside High School</strong> shelter is now open (cap. 200)</div>
-                                        <div className="activity-time">45 minutes ago</div>
-                                    </div>
-                                </div>
-                                <div className="activity-item">
-                                    <div className="activity-dot-col">
-                                        <div className="a-dot a-dot-resource"></div>
-                                        <div className="a-line"></div>
-                                    </div>
-                                    <div className="activity-body">
-                                        <div className="activity-text"><strong>Water supply</strong> — 500 cases dispatched to Zone 4</div>
-                                        <div className="activity-time">1 hour ago</div>
-                                    </div>
-                                </div>
-                                <div className="activity-item">
-                                    <div className="activity-dot-col">
-                                        <div className="a-dot a-dot-alert"></div>
-                                        <div className="a-line"></div>
-                                    </div>
-                                    <div className="activity-body">
-                                        <div className="activity-text"><strong>River Rd Flash Flood</strong> incident opened by Zone 2 coord.</div>
-                                        <div className="activity-time">3 hours ago</div>
-                                    </div>
-                                </div>
-                                <div className="activity-item">
-                                    <div className="activity-dot-col">
-                                        <div className="a-dot a-dot-resolve"></div>
-                                        <div className="a-line"></div>
-                                    </div>
-                                    <div className="activity-body">
-                                        <div className="activity-text"><strong>North Park shelter</strong> reached capacity — overflow rerouted</div>
-                                        <div className="activity-time">4 hours ago</div>
-                                    </div>
+                            <div className="panel-body" style={{ padding: '16px 20px' }}>
+                                <div className="hotline-grid">
+                                    {dashboardData.hotlines.map((h, i) => (
+                                        <div key={i} className="hotline-card">
+                                            <div className="hotline-org">{h.organization}</div>
+                                            <div className="hotline-number">{h.number}</div>
+                                        </div>
+                                    ))}
                                 </div>
                             </div>
                         </div>
                     </div>
-
-                    {/* BOTTOM ROW */}
-                    <div className="bottom-row">
-
-                        {/* SHELTER STATUS */}
-                        <div className="panel">
-                            <div className="panel-header">
-                                <span className="panel-title">Shelter Status</span>
-                                <a href="#" className="panel-action">Manage all →</a>
-                            </div>
-                            <div className="shelter-list">
-                                <div className="shelter-item">
-                                    <div className="shelter-icon-wrap si-open">🏫</div>
-                                    <div className="shelter-info">
-                                        <div className="shelter-name">Eastside High School</div>
-                                        <div className="shelter-meta">Zone 4 · Opens 6:00 AM</div>
-                                    </div>
-                                    <div className="shelter-cap cap-ok">112 / 200</div>
-                                </div>
-                                <div className="shelter-item">
-                                    <div className="shelter-icon-wrap si-full">🏛️</div>
-                                    <div className="shelter-info">
-                                        <div className="shelter-name">North Park Rec Center</div>
-                                        <div className="shelter-meta">Zone 3 · Overflow active</div>
-                                    </div>
-                                    <div className="shelter-cap cap-full">150 / 150</div>
-                                </div>
-                                <div className="shelter-item">
-                                    <div className="shelter-icon-wrap si-standby">⛪</div>
-                                    <div className="shelter-info">
-                                        <div className="shelter-name">St. Andrew's Church</div>
-                                        <div className="shelter-meta">Zone 5 · On standby</div>
-                                    </div>
-                                    <div className="shelter-cap cap-warning">80 / 100</div>
-                                </div>
-                                <div className="shelter-item">
-                                    <div className="shelter-icon-wrap si-open">🏢</div>
-                                    <div className="shelter-info">
-                                        <div className="shelter-name">Community Center A</div>
-                                        <div className="shelter-meta">Zone 2 · 24h staffed</div>
-                                    </div>
-                                    <div className="shelter-cap cap-ok">45 / 180</div>
-                                </div>
-                                <div className="shelter-item">
-                                    <div className="shelter-icon-wrap si-open">🏪</div>
-                                    <div className="shelter-info">
-                                        <div className="shelter-name">Westfield Convention Hall</div>
-                                        <div className="shelter-meta">Zone 6 · Just opened</div>
-                                    </div>
-                                    <div className="shelter-cap cap-ok">22 / 350</div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* VOLUNTEER DEPLOYMENT CHART */}
-                        <div className="panel">
-                            <div className="panel-header">
-                                <span className="panel-title">Volunteer Deployment</span>
-                            </div>
-                            <div className="chart-area">
-                                <div className="chart-summary">
-                                    <div className="chart-metric">
-                                        <div className="chart-metric-val">134</div>
-                                        <div className="chart-metric-label">Active today</div>
-                                    </div>
-                                    <div className="chart-metric">
-                                        <div className="chart-metric-val" style={{ color: 'var(--text-light)' }}>93</div>
-                                        <div className="chart-metric-label">Yesterday</div>
-                                    </div>
-                                </div>
-                                <div className="bar-chart">
-                                    <div className="bar-group">
-                                        <div className="bar bar-prev" style={{ height: '38px' }}></div>
-                                        <div className="bar-label">MON</div>
-                                    </div>
-                                    <div className="bar-group">
-                                        <div className="bar bar-prev" style={{ height: '52px' }}></div>
-                                        <div className="bar-label">TUE</div>
-                                    </div>
-                                    <div className="bar-group">
-                                        <div className="bar bar-prev" style={{ height: '44px' }}></div>
-                                        <div className="bar-label">WED</div>
-                                    </div>
-                                    <div className="bar-group">
-                                        <div className="bar bar-prev" style={{ height: '60px' }}></div>
-                                        <div className="bar-label">THU</div>
-                                    </div>
-                                    <div className="bar-group">
-                                        <div className="bar bar-prev" style={{ height: '50px' }}></div>
-                                        <div className="bar-label">FRI</div>
-                                    </div>
-                                    <div className="bar-group">
-                                        <div className="bar bar-prev" style={{ height: '42px' }}></div>
-                                        <div className="bar-label">SAT</div>
-                                    </div>
-                                    <div className="bar-group">
-                                        <div className="bar bar-current" style={{ height: '82px' }}></div>
-                                        <div className="bar-label">NOW</div>
-                                    </div>
-                                </div>
-                                <div style={{ display: 'flex', gap: '16px', marginTop: '14px' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: 'var(--text-light)' }}>
-                                        <div style={{ width: '10px', height: '10px', borderRadius: '2px', background: 'var(--color-4)' }}></div>
-                                        Today
-                                    </div>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: 'var(--text-light)' }}>
-                                        <div style={{ width: '10px', height: '10px', borderRadius: '2px', background: 'rgba(164,180,101,0.4)' }}></div>
-                                        Prior days
-                                    </div>
-                                </div>
-                                <div style={{ marginTop: '18px', paddingTop: '16px', borderTop: '1px solid var(--border)' }}>
-                                    <div style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-light)', marginBottom: '10px' }}>Deployed by role</div>
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '7px' }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '12px' }}>
-                                            <span style={{ width: '80px', color: 'var(--text-light)' }}>Search & Rescue</span>
-                                            <div style={{ flex: 1, height: '6px', background: 'var(--border)', borderRadius: '4px', overflow: 'hidden' }}><div style={{ width: '62%', height: '100%', background: 'var(--color-4)', borderRadius: '4px' }}></div></div>
-                                            <span style={{ fontWeight: 700, color: 'var(--text-dark)', width: '26px', textAlign: 'right' }}>52</span>
-                                        </div>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '12px' }}>
-                                            <span style={{ width: '80px', color: 'var(--text-light)' }}>Shelter Staff</span>
-                                            <div style={{ flex: 1, height: '6px', background: 'var(--border)', borderRadius: '4px', overflow: 'hidden' }}><div style={{ width: '38%', height: '100%', background: 'var(--color-3)', borderRadius: '4px' }}></div></div>
-                                            <span style={{ fontWeight: 700, color: 'var(--text-dark)', width: '26px', textAlign: 'right' }}>38</span>
-                                        </div>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '12px' }}>
-                                            <span style={{ width: '80px', color: 'var(--text-light)' }}>Supply Chain</span>
-                                            <div style={{ flex: 1, height: '6px', background: 'var(--border)', borderRadius: '4px', overflow: 'hidden' }}><div style={{ width: '24%', height: '100%', background: 'var(--color-2)', borderRadius: '4px' }}></div></div>
-                                            <span style={{ fontWeight: 700, color: 'var(--text-dark)', width: '26px', textAlign: 'right' }}>26</span>
-                                        </div>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '12px' }}>
-                                            <span style={{ width: '80px', color: 'var(--text-light)' }}>Medical</span>
-                                            <div style={{ flex: 1, height: '6px', background: 'var(--border)', borderRadius: '4px', overflow: 'hidden' }}><div style={{ width: '18%', height: '100%', background: '#c0392b', borderRadius: '4px' }}></div></div>
-                                            <span style={{ fontWeight: 700, color: 'var(--text-dark)', width: '26px', textAlign: 'right' }}>18</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                    </div>
-                </div>{/* /content */}
+                </div>
             </div>
-            {/* /main */}
-            <LogoutModal
-                show={showLogoutModal}
-                onClose={() => setShowLogoutModal(false)}
-                onConfirm={handleLogout}
-            />
-        </div>
+
+            {/* FLOATING ACTION BUTTON */}
+            <button className="fab" onClick={openModal}>
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M12 4v16m8-8H4" /></svg>
+                REPORT INCIDENT
+            </button>
+
+            {/* REPORT INCIDENT MODAL (Controlled by React State) */}
+            <div className={`modal-overlay ${isModalOpen ? 'open' : ''}`} onClick={handleBackdropClick}>
+                <div className="modal">
+                    <div className="modal-header">
+                        <div>
+                            <h2>Submit Emergency Report</h2>
+                            <p>Alert barangay officials of incidents near you</p>
+                        </div>
+                        <button className="close-btn" onClick={closeModal}>×</button>
+                    </div>
+                    {notification.show && (
+                        <Notification
+                            message={notification.message}
+                            type={notification.type}
+                            onClose={() => setNotification({ show: false, message: '', type: '' })}
+                        />
+                    )}
+                    <div className="modal-body">
+                        <form onSubmit={handleReportSubmit}>
+                            <div className="form-group">
+                                <label>Incident Type <span className="required">*</span></label>
+                                <select
+                                    name="incidentType"
+                                    className="form-control"
+                                    value={reportForm.incidentType}
+                                    onChange={(e) => setReportForm({ ...reportForm, incidentType: e.target.value })}
+                                >
+                                    <option value="flood">Flood</option>
+                                    <option value="fire">Fire</option>
+                                    <option value="medical">Medical Emergency</option>
+                                    <option value="accident">Accident</option>
+                                    <option value="other">Other</option>
+                                </select>
+                            </div>
+                            <div className="form-group">
+                                <label>Location <span className="required">*</span></label>
+                                <div className="input-with-icon">
+                                    <svg className="input-icon" width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                                    <input
+                                        type="text"
+                                        name="location"
+                                        className="form-control"
+                                        placeholder="Enter landmark or street name..."
+                                        value={reportForm.location}
+                                        onChange={(e) => setReportForm({ ...reportForm, location: e.target.value })}
+                                        required
+                                    />
+                                    <button type="button" className="btn-location" title="Use Current Location">
+                                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 008 11a4 4 0 118 0c0 1.017-.07 2.019-.203 3m-2.118 6.844A21.88 21.88 0 0015.171 17m3.839 1.132c.645-2.266.99-4.659.99-7.132A8 8 0 008 4.07M3 15.364c.64-1.319 1-2.8 1-4.364 0-1.457.39-2.823 1.07-4" /></svg>
+                                    </button>
+                                </div>
+                            </div>
+                            <div className="form-group">
+                                <label>Description <span className="required">*</span></label>
+                                <textarea
+                                    name="description"
+                                    className="form-control"
+                                    rows="3"
+                                    placeholder="Provide details about the incident..."
+                                    value={reportForm.description}
+                                    onChange={(e) => setReportForm({ ...reportForm, description: e.target.value })}
+                                    required
+                                ></textarea>
+                            </div>
+                            <div className="form-group">
+                                <label>Photo Evidence (Optional)</label>
+                                <div className="file-upload-box">
+                                    <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                                    <span>Click to upload photo</span>
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        style={{ display: 'none' }}
+                                        onChange={(e) => setReportForm({ ...reportForm, photo: e.target.files[0] })}
+                                    />
+                                </div>
+                                {reportForm.photo && <p style={{ fontSize: '0.8rem', color: 'var(--text-light)', marginTop: '4px' }}>Selected: {reportForm.photo.name}</p>}
+                            </div>
+                        </form>
+                    </div>
+                    <div className="modal-footer">
+                        <button type="button" className="btn-outline" onClick={closeModal} disabled={isSubmitting}>Cancel</button>
+                        <button type="submit" className="btn-primary" onClick={handleReportSubmit} disabled={isSubmitting}>
+                            {isSubmitting ? 'Submitting...' : 'Submit Report'}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </Layout>
     );
 };
 

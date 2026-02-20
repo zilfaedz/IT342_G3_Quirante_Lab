@@ -13,27 +13,27 @@ const LogoutModal = ({ show, onClose, onConfirm }) => {
     if (!show) return null;
 
     return (
-        <div className="modal-overlay" onClick={onClose}>
-            <div className="modal-content" onClick={e => e.stopPropagation()}>
+        <div className="logout-modal-overlay" onClick={onClose}>
+            <div className="logout-modal-content" onClick={e => e.stopPropagation()}>
 
-                <div className="modal-header">
-                    <div className="modal-icon">
+                <div className="logout-modal-header">
+                    <div className="logout-modal-icon">
                         <LogoutIcon />
                     </div>
                     <h3>Confirm Logout</h3>
                 </div>
 
-                <div className="modal-divider" />
+                <div className="logout-modal-divider" />
 
-                <div className="modal-body">
+                <div className="logout-modal-body">
                     <p>Are you sure you want to sign out of your account?</p>
                 </div>
 
-                <div className="modal-footer">
-                    <button className="modal-btn cancel-btn" onClick={onClose}>
+                <div className="logout-modal-footer">
+                    <button className="logout-modal-btn cancel-btn" onClick={onClose}>
                         Cancel
                     </button>
-                    <button className="modal-btn logout-btn" onClick={onConfirm}>
+                    <button className="logout-modal-btn logout-btn" onClick={onConfirm}>
                         Sign Out
                     </button>
                 </div>

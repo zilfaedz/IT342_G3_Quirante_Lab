@@ -27,7 +27,7 @@ function App() {
               <Route
                 path="/dashboard"
                 element={
-                  <ProtectedRoute>
+                  <ProtectedRoute allowedRoles={['Resident', 'Barangay Official', 'Barangay Captain', 'Responder', 'City Admin', 'System Admin']}>
                     <Dashboard />
                   </ProtectedRoute>
                 }
@@ -35,9 +35,19 @@ function App() {
               <Route
                 path="/profile"
                 element={
-                  <ProtectedRoute>
+                  <ProtectedRoute allowedRoles={['Resident', 'Barangay Official', 'Barangay Captain', 'Responder', 'City Admin', 'System Admin']}>
                     <Profile />
                   </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/unauthorized"
+                element={
+                  <div style={{ textAlign: 'center', marginTop: '50px' }}>
+                    <h1>403 - Forbidden</h1>
+                    <p>You do not have permission to view this page.</p>
+                    <a href="/" style={{ color: 'var(--primary)', textDecoration: 'underline' }}>Return to Home</a>
+                  </div>
                 }
               />
             </Routes>

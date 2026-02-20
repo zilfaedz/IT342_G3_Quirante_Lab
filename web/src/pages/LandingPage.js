@@ -526,241 +526,241 @@ const styles = `
 `;
 
 const LandingPage = ({ navigate: propNavigate }) => {
-    const routerNavigate = useNavigate();
-    const navigate = propNavigate || routerNavigate;
+  const routerNavigate = useNavigate();
+  const navigate = propNavigate || routerNavigate;
 
-    useEffect(() => {
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach(el => {
-                if (el.isIntersecting) {
-                    el.target.classList.add('visible');
-                    observer.unobserve(el.target);
-                }
-            });
-        }, { threshold: 0.1 });
+  useEffect(() => {
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(el => {
+        if (el.isIntersecting) {
+          el.target.classList.add('visible');
+          observer.unobserve(el.target);
+        }
+      });
+    }, { threshold: 0.1 });
 
-        document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
-        return () => observer.disconnect();
-    }, []);
+    document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+    return () => observer.disconnect();
+  }, []);
 
-    return (
-        <>
-            <style>{styles}</style>
-            <div className="lp">
+  return (
+    <>
+      <style>{styles}</style>
+      <div className="lp">
 
-                {/* NAV */}
-                <nav className="lp-nav">
-                    <a href="#" className="lp-nav-logo">Lorem<span>Ipsum</span></a>
-                    <ul className="lp-nav-links">
-                        <li><a href="#">Lorem</a></li>
-                        <li><a href="#">Ipsum</a></li>
-                        <li><a href="#">Dolor</a></li>
-                        <li><a href="#">Sit</a></li>
-                        <li><a href="#">Amet</a></li>
-                        <li><a href="#">Contact</a></li>
-                        <li><button onClick={() => navigate('/login')} className="btn-nav">Login</button></li>
-                        <li><button onClick={() => navigate('/register')} className="btn-nav-outline">Sign Up</button></li>
-                    </ul>
-                </nav>
+        {/* NAV */}
+        <nav className="lp-nav">
+          <a href="#" className="lp-nav-logo">Lorem<span>Ipsum</span></a>
+          <ul className="lp-nav-links">
+            <li><a href="#">Lorem</a></li>
+            <li><a href="#">Ipsum</a></li>
+            <li><a href="#">Dolor</a></li>
+            <li><a href="#">Sit</a></li>
+            <li><a href="#">Amet</a></li>
+            <li><a href="#">Contact</a></li>
+            <li><button onClick={() => navigate('/login')} className="btn-nav">Login</button></li>
+            <li><button onClick={() => navigate('/register')} className="btn-nav-outline">Sign Up</button></li>
+          </ul>
+        </nav>
 
-                {/* HERO */}
-                <section className="lp-hero">
-                    <div className="lp-hero-bg" style={{ backgroundImage: `url(${heroBg})` }} />
-                    <div className="lp-hero-content">
-                        <p className="lp-hero-eyebrow">Lorem ipsum dolor</p>
-                        <h1 className="lp-hero-title">
-                            Lorem<br /><em>Ipsum</em>
-                        </h1>
-                        <p className="lp-hero-sub">
-                            Dolor sit amet, consectetur adipiscing elit sed do eiusmod tempor incididunt ut labore.
-                        </p>
-                        <div className="lp-hero-ctas">
-                            <button onClick={() => navigate('/register')} className="btn-hero-primary">
-                                Sign Up Today
-                            </button>
-                            <button className="btn-hero-ghost">Explore More</button>
-                        </div>
-                    </div>
-                    <div className="hero-scroll-line">
-                        <span>Scroll</span>
-                    </div>
-                </section>
-
-                {/* JOY */}
-                <section className="lp-joy">
-                    <div className="lp-joy-left">
-                        <p className="lp-joy-tag reveal">Lorem ipsum dolor</p>
-                        <h2 className="lp-joy-title reveal reveal-delay-1">
-                            Lorem Ipsum<br /><em>Dolor Sit Amet</em>
-                        </h2>
-                        <p className="lp-joy-body reveal reveal-delay-2">
-                            Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor
-                            incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam quis nostrud.
-                        </p>
-                        <button onClick={() => navigate('/register')} className="btn-primary reveal reveal-delay-3">
-                            Get Started
-                        </button>
-                    </div>
-                    <div className="lp-joy-right reveal reveal-delay-1">
-                        <div className="photo-card">Lorem<br />Ipsum</div>
-                        <div className="photo-card">Dolor<br />Sit</div>
-                        <div className="photo-card">Consectetur Adipiscing</div>
-                    </div>
-                </section>
-
-                <div className="section-ornament">· · · ✦ · · ·</div>
-
-                {/* OPEN */}
-                <section className="lp-open">
-                    <div className="lp-open-image-area reveal">
-                        <div className="lp-open-image-box">
-                            <span>🌿</span>
-                            <div className="lp-open-badge">
-                                <div className="lp-open-badge-inner">
-                                    <strong>Lorem</strong>
-                                    Ipsum!
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div>
-                        <p className="lp-open-eyebrow">Lorem Ipsum!</p>
-                        <h2 className="lp-open-title reveal">
-                            Lorem Ipsum Dolor<br /><em>Sit Amet!</em>
-                        </h2>
-                        <p className="lp-open-desc reveal reveal-delay-1">
-                            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt.
-                        </p>
-                        <p className="lp-open-desc reveal reveal-delay-2">
-                            Ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation
-                            ullamco laboris nisi ut aliquip ex ea commodo consequat.
-                        </p>
-                        <button onClick={() => navigate('/register')} className="btn-primary reveal reveal-delay-3">
-                            Sign Up
-                        </button>
-                    </div>
-                </section>
-
-                {/* FEATURES */}
-                <section className="lp-features">
-                    <p className="lp-features-eyebrow reveal">Lorem ipsum dolor</p>
-                    <h2 className="lp-features-title reveal reveal-delay-1">
-                        Consectetur Adipiscing<br />Elit Sed Do
-                    </h2>
-                    <div className="lp-features-grid">
-                        {[
-                            { icon: '🎠', title: 'Lorem Ipsum', desc: 'Dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt ut labore.' },
-                            { icon: '🌸', title: 'Dolor Sit Amet', desc: 'Consectetur adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna.' },
-                            { icon: '🎂', title: 'Consectetur', desc: 'Adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.' },
-                        ].map((f, i) => (
-                            <div key={i} className={`feature-card reveal reveal-delay-${i}`}>
-                                <div className="feature-icon-wrap">{f.icon}</div>
-                                <h3>{f.title}</h3>
-                                <p>{f.desc}</p>
-                            </div>
-                        ))}
-                    </div>
-                </section>
-
-                {/* CLASSES */}
-                <section className="lp-classes">
-                    <div className="lp-classes-header">
-                        <h2 className="lp-classes-title reveal">
-                            Lorem Ipsum<br />Dolor Sit
-                        </h2>
-                        <a href="#" className="btn-outline reveal">View All</a>
-                    </div>
-                    <div className="lp-classes-grid">
-                        {[
-                            { ci: 'ci-1', icon: '🤸', tag: 'Lorem Ipsum', title: 'Dolor Sit Amet', desc: 'Consectetur adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.', meta: 'Lorem 0–18', price: '$28', delay: '' },
-                            { ci: 'ci-2', icon: '🎵', tag: 'Ipsum Dolor', title: 'Consectetur Elit', desc: 'Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua ut enim ad minim.', meta: 'Dolor 1–3', price: '$24', delay: 'reveal-delay-1' },
-                            { ci: 'ci-3', icon: '🌿', tag: 'Sit Amet', title: 'Adipiscing Elit', desc: 'Ut labore et dolore magna aliqua ut enim ad minim veniam quis nostrud exercitation.', meta: 'All lorem', price: '$22', delay: 'reveal-delay-2' },
-                        ].map((c, i) => (
-                            <div key={i} className={`class-card reveal ${c.delay}`}>
-                                <div className={`class-card-img ${c.ci}`}><span>{c.icon}</span></div>
-                                <div className="class-card-body">
-                                    <span className="class-tag">{c.tag}</span>
-                                    <h3>{c.title}</h3>
-                                    <p>{c.desc}</p>
-                                    <div className="class-meta">
-                                        <span>{c.meta}</span>
-                                        <span className="class-price">{c.price}</span>
-                                    </div>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </section>
-
-                {/* TESTIMONIAL */}
-                <section className="lp-testimonial">
-                    <div className="testimonial-inner">
-                        <div className="stars reveal">★★★★★</div>
-                        <blockquote className="testimonial-quote reveal reveal-delay-1">
-                            "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor
-                            incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam."
-                        </blockquote>
-                        <div className="testimonial-author reveal reveal-delay-2">
-                            <div className="author-avatar" />
-                            <div>
-                                <div className="author-name">Lorem I.</div>
-                                <div className="author-role">Dolor sit amet</div>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-
-                {/* CTA */}
-                <section className="lp-cta">
-                    <p className="cta-eyebrow reveal">Lorem ipsum dolor?</p>
-                    <h2 className="cta-title reveal reveal-delay-1">
-                        Consectetur Adipiscing<br />Elit Sed Do
-                    </h2>
-                    <p className="cta-sub reveal reveal-delay-2">
-                        Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor
-                        incididunt ut labore et dolore magna aliqua.
-                    </p>
-                    <div className="cta-buttons reveal reveal-delay-3">
-                        <button onClick={() => navigate('/register')} className="btn-white">Sign Up</button>
-                        <button onClick={() => navigate('/login')} className="btn-white-outline">Login</button>
-                    </div>
-                </section>
-
-                {/* FOOTER */}
-                <footer className="lp-footer">
-                    <div className="footer-inner">
-                        <div>
-                            <a href="#" className="footer-brand">Lorem<span>Ipsum</span></a>
-                            <p className="footer-tagline">
-                                Dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt
-                                ut labore et dolore.
-                            </p>
-                            <div className="footer-social">
-                                <a href="#" className="social-dot">📷</a>
-                                <a href="#" className="social-dot">🎵</a>
-                                <a href="#" className="social-dot">👍</a>
-                            </div>
-                        </div>
-                        {[
-                            { heading: 'Lorem', links: ['Ipsum', 'Dolor', 'Sit', 'Amet'] },
-                            { heading: 'Consectetur', links: ['Adipiscing', 'Elit', 'Sed', 'Do'] },
-                            { heading: 'Eiusmod', links: ['Tempor', 'Incididunt', 'lorem@ipsum.com', '(123) 456-7890'] },
-                        ].map((col, i) => (
-                            <div key={i} className="footer-col">
-                                <h4>{col.heading}</h4>
-                                <ul>{col.links.map((l, j) => <li key={j}><a href="#">{l}</a></li>)}</ul>
-                            </div>
-                        ))}
-                    </div>
-                    <div className="footer-bottom">
-                        <span>© 2026 Lorem Ipsum. All rights reserved.</span>
-                        <span>Privacy Policy · Terms of Service</span>
-                    </div>
-                </footer>
-
+        {/* HERO */}
+        <section className="lp-hero">
+          <div className="lp-hero-bg" style={{ backgroundImage: `url(${heroBg})` }} />
+          <div className="lp-hero-content">
+            <p className="lp-hero-eyebrow">Lorem ipsum dolor</p>
+            <h1 className="lp-hero-title">
+              Lorem<br /><em>Ipsum</em>
+            </h1>
+            <p className="lp-hero-sub">
+              Dolor sit amet, consectetur adipiscing elit sed do eiusmod tempor incididunt ut labore.
+            </p>
+            <div className="lp-hero-ctas">
+              <button onClick={() => navigate('/register')} className="btn-hero-primary">
+                Sign Up Today
+              </button>
+              <button className="btn-hero-ghost">Explore More</button>
             </div>
-        </>
-    );
+          </div>
+          <div className="hero-scroll-line">
+            <span>Scroll</span>
+          </div>
+        </section>
+
+        {/* JOY */}
+        <section className="lp-joy">
+          <div className="lp-joy-left">
+            <p className="lp-joy-tag reveal">Lorem ipsum dolor</p>
+            <h2 className="lp-joy-title reveal reveal-delay-1">
+              Lorem Ipsum<br /><em>Dolor Sit Amet</em>
+            </h2>
+            <p className="lp-joy-body reveal reveal-delay-2">
+              Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor
+              incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam quis nostrud.
+            </p>
+            <button onClick={() => navigate('/register')} className="btn-primary reveal reveal-delay-3">
+              Get Started
+            </button>
+          </div>
+          <div className="lp-joy-right reveal reveal-delay-1">
+            <div className="photo-card">Lorem<br />Ipsum</div>
+            <div className="photo-card">Dolor<br />Sit</div>
+            <div className="photo-card">Consectetur Adipiscing</div>
+          </div>
+        </section>
+
+        <div className="section-ornament">· · · ✦ · · ·</div>
+
+        {/* OPEN */}
+        <section className="lp-open">
+          <div className="lp-open-image-area reveal">
+            <div className="lp-open-image-box">
+              <span>🌿</span>
+              <div className="lp-open-badge">
+                <div className="lp-open-badge-inner">
+                  <strong>Lorem</strong>
+                  Ipsum!
+                </div>
+              </div>
+            </div>
+          </div>
+          <div>
+            <p className="lp-open-eyebrow">Lorem Ipsum!</p>
+            <h2 className="lp-open-title reveal">
+              Lorem Ipsum Dolor<br /><em>Sit Amet!</em>
+            </h2>
+            <p className="lp-open-desc reveal reveal-delay-1">
+              Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt.
+            </p>
+            <p className="lp-open-desc reveal reveal-delay-2">
+              Ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation
+              ullamco laboris nisi ut aliquip ex ea commodo consequat.
+            </p>
+            <button onClick={() => navigate('/register')} className="btn-primary reveal reveal-delay-3">
+              Sign Up
+            </button>
+          </div>
+        </section>
+
+        {/* FEATURES */}
+        <section className="lp-features">
+          <p className="lp-features-eyebrow reveal">Lorem ipsum dolor</p>
+          <h2 className="lp-features-title reveal reveal-delay-1">
+            Consectetur Adipiscing<br />Elit Sed Do
+          </h2>
+          <div className="lp-features-grid">
+            {[
+              { icon: '🎠', title: 'Lorem Ipsum', desc: 'Dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt ut labore.' },
+              { icon: '🌸', title: 'Dolor Sit Amet', desc: 'Consectetur adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna.' },
+              { icon: '🎂', title: 'Consectetur', desc: 'Adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.' },
+            ].map((f, i) => (
+              <div key={i} className={`feature-card reveal reveal-delay-${i}`}>
+                <div className="feature-icon-wrap">{f.icon}</div>
+                <h3>{f.title}</h3>
+                <p>{f.desc}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* CLASSES */}
+        <section className="lp-classes">
+          <div className="lp-classes-header">
+            <h2 className="lp-classes-title reveal">
+              Lorem Ipsum<br />Dolor Sit
+            </h2>
+            <a href="#" className="btn-outline reveal">View All</a>
+          </div>
+          <div className="lp-classes-grid">
+            {[
+              { ci: 'ci-1', icon: '🤸', tag: 'Lorem Ipsum', title: 'Dolor Sit Amet', desc: 'Consectetur adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.', meta: 'Lorem 0–18', price: '$28', delay: '' },
+              { ci: 'ci-2', icon: '🎵', tag: 'Ipsum Dolor', title: 'Consectetur Elit', desc: 'Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua ut enim ad minim.', meta: 'Dolor 1–3', price: '$24', delay: 'reveal-delay-1' },
+              { ci: 'ci-3', icon: '🌿', tag: 'Sit Amet', title: 'Adipiscing Elit', desc: 'Ut labore et dolore magna aliqua ut enim ad minim veniam quis nostrud exercitation.', meta: 'All lorem', price: '$22', delay: 'reveal-delay-2' },
+            ].map((c, i) => (
+              <div key={i} className={`class-card reveal ${c.delay}`}>
+                <div className={`class-card-img ${c.ci}`}><span>{c.icon}</span></div>
+                <div className="class-card-body">
+                  <span className="class-tag">{c.tag}</span>
+                  <h3>{c.title}</h3>
+                  <p>{c.desc}</p>
+                  <div className="class-meta">
+                    <span>{c.meta}</span>
+                    <span className="class-price">{c.price}</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* TESTIMONIAL */}
+        <section className="lp-testimonial">
+          <div className="testimonial-inner">
+            <div className="stars reveal">★★★★★</div>
+            <blockquote className="testimonial-quote reveal reveal-delay-1">
+              "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor
+              incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam."
+            </blockquote>
+            <div className="testimonial-author reveal reveal-delay-2">
+              <div className="author-avatar" />
+              <div>
+                <div className="author-name">Lorem I.</div>
+                <div className="author-role">Dolor sit amet</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* CTA */}
+        <section className="lp-cta">
+          <p className="cta-eyebrow reveal">Lorem ipsum dolor?</p>
+          <h2 className="cta-title reveal reveal-delay-1">
+            Consectetur Adipiscing<br />Elit Sed Do
+          </h2>
+          <p className="cta-sub reveal reveal-delay-2">
+            Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor
+            incididunt ut labore et dolore magna aliqua.
+          </p>
+          <div className="cta-buttons reveal reveal-delay-3">
+            <button onClick={() => navigate('/register')} className="btn-white">Sign Up</button>
+            <button onClick={() => navigate('/login')} className="btn-white-outline">Login</button>
+          </div>
+        </section>
+
+        {/* FOOTER */}
+        <footer className="lp-footer">
+          <div className="footer-inner">
+            <div>
+              <a href="#" className="footer-brand">Lorem<span>Ipsum</span></a>
+              <p className="footer-tagline">
+                Dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt
+                ut labore et dolore.
+              </p>
+              <div className="footer-social">
+                <a href="#" className="social-dot">📷</a>
+                <a href="#" className="social-dot">🎵</a>
+                <a href="#" className="social-dot">👍</a>
+              </div>
+            </div>
+            {[
+              { heading: 'Lorem', links: ['Ipsum', 'Dolor', 'Sit', 'Amet'] },
+              { heading: 'Consectetur', links: ['Adipiscing', 'Elit', 'Sed', 'Do'] },
+              { heading: 'Eiusmod', links: ['Tempor', 'Incididunt', 'lorem@ipsum.com', '(123) 456-7890'] },
+            ].map((col, i) => (
+              <div key={i} className="footer-col">
+                <h4>{col.heading}</h4>
+                <ul>{col.links.map((l, j) => <li key={j}><a href="#">{l}</a></li>)}</ul>
+              </div>
+            ))}
+          </div>
+          <div className="footer-bottom">
+            <span>© 2026 Lorem Ipsum. All rights reserved.</span>
+            <span>Privacy Policy · Terms of Service</span>
+          </div>
+        </footer>
+
+      </div>
+    </>
+  );
 };
 
 export default LandingPage;

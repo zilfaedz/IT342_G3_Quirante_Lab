@@ -1,4 +1,4 @@
-.modal-overlay {
+.logout-modal-overlay {
     position: fixed;
     top: 0;
     left: 0;
@@ -12,7 +12,7 @@
     animation: fadeIn 0.2s ease-out;
 }
 
-.modal-content {
+.logout-modal-content {
     background: var(--white);
     padding: 0;
     border-radius: 16px;
@@ -24,7 +24,7 @@
     animation: slideUp 0.2s ease-out;
 }
 
-.modal-header {
+.logout-modal-header {
     padding: 2rem 2rem 1rem 2rem;
     display: flex;
     flex-direction: column;
@@ -32,7 +32,7 @@
     gap: 1rem;
 }
 
-.modal-icon {
+.logout-modal-icon {
     width: 48px;
     height: 48px;
     background-color: rgba(211, 47, 47, 0.1);
@@ -44,7 +44,7 @@
     border: 8px solid rgba(211, 47, 47, 0.05);
 }
 
-.modal-header h3 {
+.logout-modal-header h3 {
     margin: 0;
     color: var(--text-dark);
     font-family: 'Montserrat', sans-serif;
@@ -52,18 +52,18 @@
     font-weight: 600;
 }
 
-.modal-divider {
+.logout-modal-divider {
     height: 1px;
     background-color: var(--border);
     margin: 0;
     width: 100%;
 }
 
-.modal-body {
+.logout-modal-body {
     padding: 2rem 2rem 1.5rem 2rem;
 }
 
-.modal-body p {
+.logout-modal-body p {
     color: var(--text-light);
     font-size: 0.95rem;
     margin: 0;
@@ -71,14 +71,14 @@
     font-family: 'Inter', sans-serif;
 }
 
-.modal-footer {
+.logout-modal-footer {
     padding: 0 2rem 2rem 2rem;
     display: flex;
     gap: 0.8rem;
     justify-content: center;
 }
 
-.modal-btn {
+.logout-modal-btn {
     flex: 1;
     padding: 0.75rem 1rem;
     border: 1px solid transparent;

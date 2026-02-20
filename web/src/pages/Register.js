@@ -9,6 +9,9 @@ const Register = () => {
     const [confirmPassword, setConfirmPassword] = useState('');
     const [firstName, setFirstName] = useState('');
     const [lastName, setLastName] = useState('');
+    const [address, setAddress] = useState('');
+    const [contactNumber, setContactNumber] = useState('');
+    const [barangay, setBarangay] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [notification, setNotification] = useState({ show: false, message: '', type: '' });
     const { register } = useAuth();
@@ -18,7 +21,7 @@ const Register = () => {
         e.preventDefault();
 
         // Basic Validation
-        if (!firstName || !lastName || !email || !password || !confirmPassword) {
+        if (!firstName || !lastName || !email || !password || !confirmPassword || !address || !contactNumber || !barangay) {
             setNotification({ show: true, message: "All fields are required.", type: 'error' });
             return;
         }
@@ -34,7 +37,7 @@ const Register = () => {
         }
 
         setIsLoading(true);
-        const result = await register(firstName, lastName, email, password);
+        const result = await register(firstName, lastName, email, password, address, contactNumber, barangay);
         setIsLoading(false);
         if (result.success) {
             setNotification({ show: true, message: "Success! Your account is ready. Please log in.", type: 'success' });
@@ -88,6 +91,33 @@ const Register = () => {
                             type="email"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
+                            required
+                        />
+                    </div>
+                    <div className="form-group">
+                        <label>Address</label>
+                        <input
+                            type="text"
+                            value={address}
+                            onChange={(e) => setAddress(e.target.value)}
+                            required
+                        />
+                    </div>
+                    <div className="form-group">
+                        <label>Contact Number</label>
+                        <input
+                            type="text"
+                            value={contactNumber}
+                            onChange={(e) => setContactNumber(e.target.value)}
+                            required
+                        />
+                    </div>
+                    <div className="form-group">
+                        <label>Barangay</label>
+                        <input
+                            type="text"
+                            value={barangay}
+                            onChange={(e) => setBarangay(e.target.value)}
                             required
                         />
                     </div>
