@@ -20,14 +20,12 @@ function App() {
           <div className="content">
             <Routes>
               <Route path="/" element={<LandingPage />} />
-              <Route element={<AuthLayout />}>
-                <Route path="/login" element={<Login />} />
-                <Route path="/register" element={<Register />} />
-              </Route>
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
               <Route
                 path="/dashboard"
                 element={
-                  <ProtectedRoute allowedRoles={['Resident', 'Barangay Official', 'Barangay Captain', 'Responder', 'City Admin', 'System Admin']}>
+                  <ProtectedRoute allowedRoles={['RESIDENT', 'OFFICIAL', 'CAPTAIN']}>
                     <Dashboard />
                   </ProtectedRoute>
                 }
@@ -35,7 +33,7 @@ function App() {
               <Route
                 path="/profile"
                 element={
-                  <ProtectedRoute allowedRoles={['Resident', 'Barangay Official', 'Barangay Captain', 'Responder', 'City Admin', 'System Admin']}>
+                  <ProtectedRoute allowedRoles={['RESIDENT', 'OFFICIAL', 'CAPTAIN']}>
                     <Profile />
                   </ProtectedRoute>
                 }

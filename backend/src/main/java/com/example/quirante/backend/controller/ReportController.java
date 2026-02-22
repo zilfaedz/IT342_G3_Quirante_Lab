@@ -40,6 +40,7 @@ public class ReportController {
             @RequestParam("description") String description,
             @RequestParam("location") String location,
             @RequestParam("incidentType") String incidentType,
+            @RequestParam(value = "urgency", defaultValue = "Medium") String urgency,
             @RequestParam(value = "photo", required = false) MultipartFile photo) {
 
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -54,6 +55,7 @@ public class ReportController {
         report.setDescription(description);
         report.setLocation(location);
         report.setIncidentType(incidentType);
+        report.setUrgency(urgency);
 
         if (photo != null && !photo.isEmpty()) {
             try {
@@ -82,7 +84,12 @@ public class ReportController {
             }
         }
 
-        reportRepository.save(report);
+        try {
+            reportRepository.save(report);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("message", "Database save failed: " + e.getMessage()));
+        }
 
         return ResponseEntity.ok(Map.of(
                 "message", "Emergency report submitted successfully",
@@ -100,8 +107,9 @@ public class ReportController {
 
         List<EmergencyReport> reports;
 
-        // If OFFICIAL, return all; if RESIDENT, return only theirs
-        if ("OFFICIAL".equals(currentUser.getRole())) {
+        // If OFFICIAL/CAPTAIN/RESPONDER, return all; if RESIDENT, return only theirs
+        String role = currentUser.getRole();
+        if ("OFFICIAL".equals(role) || "CAPTAIN".equals(role) || "RESPONDER".equals(role)) {
             reports = reportRepository.findAllByOrderByCreatedAtDesc();
         } else {
             reports = reportRepository.findByUserIdOrderByCreatedAtDesc(currentUser.getId());

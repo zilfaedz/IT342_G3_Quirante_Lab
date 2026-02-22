@@ -1,0 +1,345 @@
+/* DashboardResident.css */
+
+.weather-forecast {
+    display: flex;
+    gap: 12px;
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.forecast-day {
+    text-align: center;
+    opacity: 0.9;
+}
+
+.forecast-label {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+    font-family: var(--font-ui);
+}
+
+.forecast-icon {
+    font-size: 18px;
+    margin-bottom: 2px;
+}
+
+.forecast-temp {
+    font-size: 13px;
+    font-weight: 700;
+    font-family: var(--font-display);
+}
+
+.modal-steps {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    margin-bottom: 28px;
+}
+
+.modal-step {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+}
+
+.modal-step:not(:last-child)::after {
+    content: '';
+    flex: 1;
+    height: 2px;
+    background: var(--gray-200);
+    margin: 0 8px;
+}
+
+.modal-step.done:not(:last-child)::after,
+.modal-step.active:not(:last-child)::after {
+    background: var(--red-400);
+}
+
+.step-dot {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--gray-200);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-display);
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--gray-500);
+    flex-shrink: 0;
+    transition: all 0.2s;
+}
+
+.modal-step.done .step-dot,
+.modal-step.active .step-dot {
+    background: var(--red-600);
+    color: white;
+}
+
+.step-label {
+    font-size: 11.5px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--gray-400);
+    font-family: var(--font-ui);
+}
+
+.modal-step.active .step-label {
+    color: var(--red-600);
+}
+
+.modal-step.done .step-label {
+    color: var(--gray-600);
+}
+
+.incident-type-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-top: 8px;
+}
+
+.incident-type-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 14px 8px;
+    border: 1.5px solid var(--gray-200);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all 0.15s;
+    font-size: 12px;
+    font-weight: 600;
+    font-family: var(--font-ui);
+    color: var(--gray-700);
+    text-align: center;
+}
+
+.incident-type-card:hover,
+.incident-type-card.active {
+    border-color: var(--red-500);
+    background: var(--red-50);
+    color: var(--red-700);
+}
+
+.incident-type-card span:first-child {
+    font-size: 24px;
+}
+
+.photo-upload-zone {
+    border: 2px dashed var(--gray-300);
+    border-radius: var(--radius-md);
+    padding: 32px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: var(--font-ui);
+    font-size: 13px;
+    color: var(--gray-500);
+}
+
+.photo-upload-zone:hover {
+    border-color: var(--red-400);
+    background: var(--red-50);
+}
+
+.photo-icon {
+    font-size: 32px;
+    margin-bottom: 8px;
+}
+
+.location-detect {
+    display: flex;
+    gap: 10px;
+}
+
+.location-detect .rb-input {
+    flex: 1;
+}
+
+.confirm-panel {
+    text-align: center;
+    padding: 20px;
+}
+
+.confirm-icon {
+    font-size: 48px;
+    margin-bottom: 12px;
+}
+
+.confirm-panel h3 {
+    font-family: var(--font-display);
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+}
+
+.confirm-panel p {
+    color: var(--gray-500);
+    font-size: 13px;
+    margin-bottom: 20px;
+}
+
+.confirm-details {
+    background: var(--gray-50);
+    border-radius: var(--radius-md);
+    padding: 16px;
+    text-align: left;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.confirm-details div {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    font-family: var(--font-ui);
+}
+
+.confirm-details span:first-child {
+    font-weight: 700;
+    color: var(--gray-500);
+    text-transform: uppercase;
+    font-size: 11px;
+    letter-spacing: 0.5px;
+    width: 70px;
+}
+
+.safety-status-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.safety-last {
+    font-size: 12px;
+    color: var(--gray-400);
+    font-family: var(--font-ui);
+    text-align: center;
+}
+
+.evacuation-card-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    gap: 20px;
+}
+
+.evac-name {
+    font-family: var(--font-ui);
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--gray-900);
+    margin-bottom: 4px;
+}
+
+.evac-address,
+.evac-contact {
+    font-size: 12.5px;
+    color: var(--gray-500);
+    font-family: var(--font-ui);
+}
+
+.evac-stats {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 12px;
+    flex-shrink: 0;
+}
+
+.cap-label {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--gray-400);
+    font-family: var(--font-ui);
+    text-align: right;
+    margin-bottom: 4px;
+}
+
+.cap-value {
+    font-family: var(--font-display);
+    font-size: 16px;
+    font-weight: 700;
+    text-align: right;
+    margin-bottom: 4px;
+}
+
+.cap-bar {
+    width: 120px;
+    height: 6px;
+    background: var(--gray-200);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.cap-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.3s;
+}
+
+.profile-avatar-section {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 20px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--gray-100);
+}
+
+.profile-avatar {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: var(--red-700);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-display);
+    font-size: 26px;
+    font-weight: 800;
+    color: white;
+}
+
+.emergency-contact-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--gray-100);
+}
+
+.emergency-contact-row:last-child {
+    border-bottom: none;
+}
+
+.ec-avatar {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: var(--gray-200);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-display);
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--gray-600);
+    flex-shrink: 0;
+}

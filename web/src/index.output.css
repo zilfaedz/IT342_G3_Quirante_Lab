@@ -37,7 +37,6 @@
   --sidebar-w: 260px;
 }
 
-
 * {
   box-sizing: border-box;
   margin: 0;
@@ -74,6 +73,7 @@ h6,
 }
 
 /* Navbar */
+
 .navbar {
   background-color: white;
   padding: 1rem 2rem;

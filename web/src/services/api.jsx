@@ -20,4 +20,15 @@ api.interceptors.request.use((config) => {
 export const login = (credentials) => api.post('/auth/login', credentials);
 export const register = (userData) => api.post('/auth/register', userData);
 
+// Reports
+export const getReports = () => api.get('/reports');
+export const submitReport = (formData) => api.post('/reports', formData, {
+    headers: {
+        'Content-Type': 'multipart/form-data',
+    },
+});
+
+// Dashboard Data
+export const getDashboardData = () => api.get('/dashboard/data');
+
 export default api;

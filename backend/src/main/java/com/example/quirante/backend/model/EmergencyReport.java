@@ -24,6 +24,9 @@ public class EmergencyReport {
     @Column(nullable = false)
     private String incidentType; // e.g., "flood", "fire", "earthquake"
 
+    @Column(nullable = false)
+    private String urgency = "Medium"; // Low, Medium, High, Critical
+
     // URL to the uploaded photo or null if none
     private String photoUrl;
 
@@ -77,6 +80,14 @@ public class EmergencyReport {
 
     public void setIncidentType(String incidentType) {
         this.incidentType = incidentType;
+    }
+
+    public String getUrgency() {
+        return urgency;
+    }
+
+    public void setUrgency(String urgency) {
+        this.urgency = urgency;
     }
 
     public String getPhotoUrl() {

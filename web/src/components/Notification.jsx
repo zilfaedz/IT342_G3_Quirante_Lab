@@ -1,4 +1,5 @@
 import React, { useEffect } from "react";
+import { CheckCircle2, AlertCircle } from "lucide-react";
 import "./notification.css";
 
 export default function Notification({ message, type, show, onClose }) {
@@ -16,7 +17,7 @@ export default function Notification({ message, type, show, onClose }) {
         <div className={`notification-wrapper ${show ? "show" : ""}`}>
             <div className={`notification-box ${type}`}>
                 <div className="notification-icon">
-                    {type === "success" ? "✓" : "!"}
+                    {type === "success" ? <CheckCircle2 size={18} /> : <AlertCircle size={18} />}
                 </div>
                 <div className="notification-text">{message}</div>
             </div>

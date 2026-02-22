@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import LogoutModal from './LogoutModal';
+import logo from '../assets/ReadyBarangay_Logo.png';
 
 const Navbar = () => {
     const { user, logout } = useAuth();
@@ -22,7 +23,10 @@ const Navbar = () => {
     return (
         <nav className="navbar">
             <div className="navbar-container">
-                <Link to="/" className="navbar-logo">MyApp</Link>
+                <Link to="/" className="navbar-logo">
+                    <img src={logo} alt="Logo" style={{ height: '30px', marginRight: '10px', verticalAlign: 'middle' }} />
+                    ReadyBarangay
+                </Link>
                 <div className="navbar-links">
                     {!user ? (
                         <>

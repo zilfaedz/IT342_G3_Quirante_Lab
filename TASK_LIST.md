@@ -16,6 +16,8 @@
 - [x] Loading states for login and registration
 - [x] Prevent duplicate account registration
 - [x] Improve backend API error responses
+- [x] Design mobile UI (Login, Register, Dashboard, Profile screens)
+- [x] Set up Android Studio project (Kotlin)
 
 ## IN-PROGRESS
 
@@ -23,15 +25,11 @@
 - [ ] Profile details should be editable.
 - [ ] Forgot Password feature (email verification & reset token)
 - [ ] Remember Me feature (persistent login session)
-- [ ] Email validation during registration
 - [ ] Flash messages / user feedback notifications
-- [ ] Google / Apple Sign-In (OAuth integration)
-- [ ] Set up Android Studio project (Kotlin)
-- [ ] Design mobile UI (Login, Register, Dashboard, Profile screens)
+- [ ] Add mata mata sa password
 
 ## TODO (Android Studio - Kotlin Mobile App)
 
-- [ ] Add mata mata sa password
 - [ ] Implement API connection to Node.js backend
 - [ ] Implement user authentication (login & register)
 - [ ] Store authentication token securely
@@ -44,3 +42,5 @@
 - [ ] Perform device testing (emulator & physical device)
 - [ ] Prepare APK build for deployment
 - [ ] Conduct final end-to-end testing
+- [ ] Google / Apple Sign-In (OAuth integration)
+- [ ] Email validation during registration
