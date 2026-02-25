@@ -21,7 +21,11 @@ export default function LoginPage() {
     try {
       const result = await login(form.email, form.password, true);
       if (result.success) {
-        navigate("/dashboard");
+        if (result.user?.role === 'Super Admin') {
+          navigate("/admin/verifications");
+        } else {
+          navigate("/dashboard");
+        }
       } else {
         setError(result.message || "Invalid credentials. Please try again.");
       }

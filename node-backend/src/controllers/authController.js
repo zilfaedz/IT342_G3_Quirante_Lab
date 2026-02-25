@@ -1,29 +1,88 @@
-const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
+const pool = require('../config/database');
+const BarangayModel = require('../models/barangayModel');
 const UserModel = require('../models/userModel');
-const { logAudit } = require('../utils/logger');
 
 exports.register = async (req, res) => {
+    const connection = await pool.getConnection();
     try {
-        const { name, email, password, role, barangayId } = req.body;
+        await connection.beginTransaction();
 
-        // Check if user exists
+        const { name, email, password, role, locationData } = req.body;
+
+        // 1. Check if user already exists
         const existingUser = await UserModel.findByEmail(email);
         if (existingUser) {
-            return res.status(400).json({ message: 'User already exists' });
+            await connection.rollback();
+            return res.status(400).json({ message: 'Email already in use' });
         }
 
-        // Only System Admins can assign roles other than Resident/Responder by default logic,
-        // but for simplicity, we insert what is provided. In a real app, restrict this.
-        const assignedRole = role || 'Resident';
+        const requestedRole = role || 'Resident';
+        let barangayId = null;
 
-        const userId = await UserModel.createUser(name, email, password, assignedRole, barangayId);
-        await logAudit(userId, 'USER_REGISTERED');
+        if (requestedRole === 'Barangay Captain') {
+            // Rule 2 & 4: Barangay Captain registration
+            const existingBarangay = await BarangayModel.findByPsgc(locationData.psgcCode);
 
-        res.status(201).json({ message: 'User registered successfully', userId });
+            if (existingBarangay) {
+                if (existingBarangay.captain_id) {
+                    await connection.rollback();
+                    return res.status(400).json({ message: 'This barangay already has a registered captain.' });
+                }
+                barangayId = existingBarangay.id;
+            } else {
+                // Create new barangay
+                barangayId = await BarangayModel.createBarangay(connection, {
+                    psgcCode: locationData.psgcCode,
+                    barangayName: locationData.barangayName,
+                    cityName: locationData.cityName,
+                    cityCode: locationData.cityCode,
+                    provinceName: locationData.provinceName,
+                    provinceCode: locationData.provinceCode,
+                    regionName: locationData.regionName,
+                    regionCode: locationData.regionCode
+                });
+            }
+
+            // Create user
+            const userId = await UserModel.createUser(connection, name, email, password, 'Barangay Captain', barangayId);
+
+            // Link captain to barangay
+            await BarangayModel.updateCaptain(connection, barangayId, userId);
+
+            await connection.commit();
+            return res.status(201).json({ message: 'Barangay and Captain registered successfully', userId });
+
+        } else if (requestedRole === 'Resident') {
+            // Rule 3: Resident registration
+            const existingBarangay = await BarangayModel.findByPsgc(locationData.psgcCode);
+
+            if (!existingBarangay) {
+                await connection.rollback();
+                return res.status(400).json({
+                    message: 'This barangay is not yet registered. Please contact your Barangay Captain.'
+                });
+            }
+
+            const userId = await UserModel.createUser(connection, name, email, password, 'Resident', existingBarangay.id);
+
+            await connection.commit();
+            return res.status(201).json({ message: 'Resident registered successfully', userId });
+        } else if (requestedRole === 'Admin') {
+            // Strictly for system setup or manually created
+            const userId = await UserModel.createUser(connection, name, email, password, 'Admin', null);
+            await connection.commit();
+            return res.status(201).json({ message: 'System Admin registered successfully', userId });
+        } else {
+            await connection.rollback();
+            return res.status(400).json({ message: 'Invalid role requested' });
+        }
+
     } catch (error) {
+        if (connection) await connection.rollback();
         console.error('Registration Error:', error);
         res.status(500).json({ message: 'Internal Server Error' });
+    } finally {
+        if (connection) connection.release();
     }
 };
 

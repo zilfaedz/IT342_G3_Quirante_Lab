@@ -10,7 +10,7 @@ export default function Dashboard() {
     // Route based on role
     const role = user?.role?.toLowerCase() || "resident";
 
-    if (role === "captain") {
+    if (role === "captain" || role === "barangay captain") {
         return <DashboardCaptain user={user} />;
     }
 

@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import logo from "../assets/ReadyBarangay_Logo.png";
 import "./Register.css";
+import PhilippineLocationSelector from "../components/PhilippineLocationSelector";
 
 const steps = [
     { num: 1, label: "Your Details" },
@@ -27,8 +28,16 @@ export default function RegisterPage() {
         password: "",
         confirmPassword: "",
         barangay: "",
-        municipality: "",
-        province: "",
+        barangayCode: "",
+        cityName: "",
+        cityCode: "",
+        provinceName: "",
+        provinceCode: "",
+        regionName: "",
+        regionCode: "",
+        street: "",
+        lotBlockNumber: "",
+        phone: "",
         agree: false,
     });
     const [showPass, setShowPass] = useState(false);
@@ -51,17 +60,31 @@ export default function RegisterPage() {
         setError("");
 
         try {
-            const address = `${form.municipality}, ${form.province}`;
-            const result = await register(
-                form.firstName,
-                form.lastName,
-                form.email,
-                form.password,
-                address,
-                form.phone,
-                form.barangay,
-                form.role // Sending role to backend if needed, although backend might default
-            );
+            // Create a display-friendly address string
+            const fullAddress = `${form.street || ""}, ${form.barangay}, ${form.cityName}, ${form.provinceName}`;
+
+            // Prepare data for backend (matching Node backend schema)
+            const registrationData = {
+                firstName: form.firstName,
+                lastName: form.lastName,
+                fullName: `${form.firstName} ${form.lastName}`.trim(),
+                email: form.email,
+                password: form.password,
+                role: 'Resident', // Default for this page
+                barangayCode: form.barangayCode,
+                barangay: form.barangay,
+                cityName: form.cityName,
+                cityCode: form.cityCode,
+                provinceName: form.provinceName,
+                provinceCode: form.provinceCode,
+                regionName: form.regionName,
+                regionCode: form.regionCode,
+                street: form.street,
+                lotBlockNumber: form.lotBlockNumber,
+                contactNumber: form.phone
+            };
+
+            const result = await register(registrationData);
 
             if (result.success) {
                 setSubmitted(true);
@@ -97,8 +120,7 @@ export default function RegisterPage() {
                         <div className="reg-success-icon"><CheckCircle2 size={64} color="var(--green-600)" /></div>
                         <h2 className="reg-success-title">Account Created!</h2>
                         <p className="reg-success-sub">
-                            Welcome to ReadyBarangay. Your account is under review. You'll receive a
-                            confirmation email shortly.
+                            Welcome to ReadyBarangay. Your account has been successfully created. You can now log in to the Resident Dashboard.
                         </p>
                         <button onClick={() => navigate("/login")} className="auth-submit-btn">
                             Go to Log In <ArrowRight size={18} style={{ marginLeft: 8 }} />
@@ -291,47 +313,51 @@ export default function RegisterPage() {
                             </div>
                         )}
 
-                        {/* Step 3 — Barangay */}
-                        {step === 3 && (
+                        {/* Step 2 — Barangay & Address */}
+                        {step === 2 && (
                             <form onSubmit={handleSubmit} className="auth-form">
-                                <div className="auth-field-group">
-                                    <label className="auth-label">Barangay Name</label>
-                                    <div className="auth-input-wrap">
-                                        <span className="auth-input-icon"><Building size={16} /></span>
-                                        <input
-                                            type="text"
-                                            className="auth-input"
-                                            placeholder="e.g. Barangay San Isidro"
-                                            value={form.barangay}
-                                            onChange={(e) => update("barangay", e.target.value)}
-                                        />
-                                    </div>
+                                <div style={{ marginBottom: 20 }}>
+                                    <PhilippineLocationSelector
+                                        onLocationChange={(loc) => {
+                                            setForm(f => ({
+                                                ...f,
+                                                regionName: loc.region.name,
+                                                regionCode: loc.region.code,
+                                                provinceName: loc.province.name,
+                                                provinceCode: loc.province.code,
+                                                cityName: loc.city.name,
+                                                cityCode: loc.city.code,
+                                                barangay: loc.barangay.name,
+                                                barangayCode: loc.barangay.code
+                                            }));
+                                        }}
+                                    />
                                 </div>
 
                                 <div className="reg-name-row">
                                     <div className="auth-field-group">
-                                        <label className="auth-label">Municipality / City</label>
-                                        <div className="auth-input-wrap">
-                                            <span className="auth-input-icon"><Building2 size={16} /></span>
-                                            <input
-                                                type="text"
-                                                className="auth-input"
-                                                placeholder="e.g. Quezon City"
-                                                value={form.municipality}
-                                                onChange={(e) => update("municipality", e.target.value)}
-                                            />
-                                        </div>
-                                    </div>
-                                    <div className="auth-field-group">
-                                        <label className="auth-label">Province</label>
+                                        <label className="auth-label">Street / Village / Area</label>
                                         <div className="auth-input-wrap">
                                             <span className="auth-input-icon"><MapPin size={16} /></span>
                                             <input
                                                 type="text"
                                                 className="auth-input"
-                                                placeholder="e.g. Metro Manila"
-                                                value={form.province}
-                                                onChange={(e) => update("province", e.target.value)}
+                                                placeholder="e.g. 123 Rizal St."
+                                                value={form.street}
+                                                onChange={(e) => update("street", e.target.value)}
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="auth-field-group">
+                                        <label className="auth-label">Lot / Block / Apt / Suite</label>
+                                        <div className="auth-input-wrap">
+                                            <span className="auth-input-icon"><Building size={16} /></span>
+                                            <input
+                                                type="text"
+                                                className="auth-input"
+                                                placeholder="e.g. Blk 1 Lot 2"
+                                                value={form.lotBlockNumber}
+                                                onChange={(e) => update("lotBlockNumber", e.target.value)}
                                             />
                                         </div>
                                     </div>
@@ -352,13 +378,19 @@ export default function RegisterPage() {
                                     </span>
                                 </label>
 
-                                <button
-                                    type="submit"
-                                    className="auth-submit-btn"
-                                    disabled={!form.agree}
-                                >
-                                    Create My Account <ArrowRight size={18} style={{ marginLeft: 8 }} />
-                                </button>
+                                <div className="reg-btn-row" style={{ marginTop: 24 }}>
+                                    <button type="button" onClick={handleBack} className="reg-back-btn">
+                                        <ArrowLeft size={16} style={{ marginRight: 6 }} /> Back
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        className="auth-submit-btn"
+                                        style={{ margin: 0 }}
+                                        disabled={!form.agree || !form.barangayCode || loading}
+                                    >
+                                        {loading ? "Creating..." : "Create My Account"} <ArrowRight size={18} style={{ marginLeft: 8 }} />
+                                    </button>
+                                </div>
                             </form>
                         )}
 

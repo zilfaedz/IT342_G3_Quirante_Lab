@@ -31,17 +31,17 @@ const roles = [
   {
     cls: "res", icon: <Home size={28} />, name: "Resident", sub: "Community Member",
     items: ["Receive real-time emergency alerts", "Report incidents with GPS location", "Find nearest open evacuation centers", "Access official announcements"],
-    btn: "solid", btnLabel: "Sign Up as Resident",
+    btn: "solid", btnLabel: "Sign Up as Resident", route: "/register"
   },
   {
     cls: "off", icon: <ShieldAlert size={28} />, name: "Official", sub: "Barangay Staff & Tanod",
     items: ["Manage and respond to incident reports", "Dispatch responders to emergencies", "Send verified advisories to residents", "Monitor evacuation center status"],
-    btn: "outline", btnLabel: "Official Registration",
+    btn: "outline", btnLabel: "Official Registration", route: "/register"
   },
   {
     cls: "cap", icon: <Star size={28} />, name: "Captain", sub: "Barangay Captain",
     items: ["Full command dashboard access", "Declare and lift community alert levels", "Oversee all operations and teams", "Generate official situation reports"],
-    btn: "dark", btnLabel: "Captain's Portal",
+    btn: "dark", btnLabel: "Captain's Portal", route: "/register-barangay"
   },
 ];
 
@@ -119,7 +119,7 @@ export default function LandingPage() {
 
         <div className="lp-nav-actions">
           <button onClick={() => navigate("/login")} className="lp-btn-nav-ghost">Log In</button>
-          <button onClick={() => navigate("/register")} className="lp-btn-nav">Sign Up Free</button>
+          <button onClick={() => navigate("/register")} className="lp-btn-nav">Sign Up</button>
         </div>
       </nav>
 
@@ -244,8 +244,17 @@ export default function LandingPage() {
               the gap between residents and local government during disasters —
               making communication faster, response smarter, and communities safer.
             </p>
-            <button onClick={() => navigate("/register")} className="btn-primary reveal reveal-delay-4">
-              Register Your Barangay <ArrowRight size={18} style={{ marginLeft: 8 }} />
+            <button
+              onClick={() => navigate("/register-barangay")}
+              className="btn-primary reveal reveal-delay-4"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center"
+              }}
+            >
+              Register Your Barangay
+              <ArrowRight size={18} style={{ marginLeft: 8 }} />
             </button>
           </div>
         </div>
@@ -361,7 +370,7 @@ export default function LandingPage() {
                       </li>
                     ))}
                   </ul>
-                  <button onClick={() => navigate("/register")} className={`btn-role ${r.btn}`}>
+                  <button onClick={() => navigate(r.route)} className={`btn-role ${r.btn}`}>
                     {r.btnLabel}
                   </button>
                 </div>
@@ -418,7 +427,7 @@ export default function LandingPage() {
                 </div>
                 <p className="cta-note">No spam. Just updates when new features ship.</p>
                 <div className="cta-divider">or register now</div>
-                <button onClick={() => navigate("/register")} className="btn-cta-outline">
+                <button onClick={() => navigate("/register-barangay")} className="btn-cta-outline">
                   Create Your Account <UserPlus size={18} style={{ marginLeft: 8 }} />
                 </button>
               </>

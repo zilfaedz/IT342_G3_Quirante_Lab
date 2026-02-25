@@ -1,6 +1,11 @@
 package com.example.quirante.backend.controller;
 
+import com.example.quirante.backend.model.User;
+import com.example.quirante.backend.repository.UserRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -14,9 +19,36 @@ import java.util.Map;
 @CrossOrigin(origins = { "http://localhost:3000", "http://localhost:3001" })
 public class DashboardController {
 
+        @Autowired
+        private UserRepository userRepository;
+
         @GetMapping("/data")
         public ResponseEntity<?> getDashboardData() {
+                Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+                User currentUser = null;
+                if (auth != null && auth.getName() != null && !auth.getName().equals("anonymousUser")) {
+                        currentUser = userRepository.findByEmail(auth.getName()).orElse(null);
+                }
+
+                String captainName = "Pending Verification";
+                String captainContact = "N/A";
+
+                if (currentUser != null && currentUser.getBarangayCode() != null) {
+                        User captain = userRepository.findFirstByBarangayCodeAndRoleAndAccountStatusOrderByIdDesc(
+                                        currentUser.getBarangayCode(), "Barangay Captain", "APPROVED").orElse(null);
+                        if (captain != null) {
+                                captainName = captain.getFullName();
+                                if (captainName == null || captainName.trim().isEmpty()) {
+                                        captainName = captain.getFirstName() + " " + captain.getLastName();
+                                }
+                                captainContact = captain.getContactNumber() != null ? captain.getContactNumber()
+                                                : "N/A";
+                        }
+                }
+
                 return ResponseEntity.ok(Map.of(
+                                "captainName", captainName,
+                                "captainContact", captainContact,
                                 "weatherAlerts", List.of(
                                                 Map.of("type", "Typhoon Warning", "message",
                                                                 "Typhoon Bising is approaching. Please stay indoors.",

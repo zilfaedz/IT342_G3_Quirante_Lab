@@ -7,7 +7,9 @@ import {
 import "./DashboardOfficial.css";
 import "../global.css";
 import LogoutModal from "../components/LogoutModal";
-import { getReports } from "../services/api";
+import IncidentDetailModal from "../components/IncidentDetailModal";
+import ManageEvacuationCenters from "../components/ManageEvacuationCenters";
+import { getReports, getUsers, assignResponder } from "../services/api";
 import { useEffect } from "react";
 
 // ---- ICONS (using Lucide) ----
@@ -17,6 +19,7 @@ import { useEffect } from "react";
 const OFFICIAL_NAV = [
     { icon: <LayoutDashboard size={18} />, label: "Overview", id: "overview" },
     { icon: <AlertTriangle size={18} />, label: "Incident Management", id: "incidents" },
+    { icon: <Building2 size={18} />, label: "Evacuation Centers", id: "evacuation" },
     { icon: <Users size={18} />, label: "Resident Directory", id: "directory" },
     { icon: <Megaphone size={18} />, label: "Announcements", id: "announcements" },
     { icon: <Package size={18} />, label: "Resources", id: "resources" },
@@ -25,45 +28,7 @@ const OFFICIAL_NAV = [
     { icon: <Lock size={18} />, label: "Logout", id: "logout" },
 ];
 
-const Sidebar = ({ active, setActive, user, onLogoutClick }) => (
-    <aside className="rb-sidebar official">
-        <div className="rb-sidebar-logo">
-            <div className="logo-icon official">RB</div>
-            <div className="logo-text">
-                ReadyBarangay
-                <span>Official Portal</span>
-            </div>
-        </div>
-        <nav className="rb-nav">
-            <div className="rb-nav-section">Operation Center</div>
-            {OFFICIAL_NAV.map(n => (
-                <div
-                    key={n.id}
-                    className={`rb-nav-item${active === n.id ? " active" : ""}`}
-                    onClick={() => {
-                        if (n.id === "logout") {
-                            onLogoutClick();
-                        } else {
-                            setActive(n.id);
-                        }
-                    }}
-                >
-                    {n.icon}
-                    {n.label}
-                </div>
-            ))}
-        </nav>
-        <div className="rb-sidebar-footer">
-            <div className="rb-user-pill">
-                <div className="rb-avatar">{user?.firstName?.charAt(0) || 'O'}</div>
-                <div className="rb-user-info">
-                    <div className="rb-user-name">{user?.firstName} {user?.lastName || "Official"}</div>
-                    <div className="rb-user-role">Barangay Official</div>
-                </div>
-            </div>
-        </div>
-    </aside>
-);
+// Local sidebar removed in favor of global Sidebar and horizontal tabs.
 
 // ---- SCREENS ----
 const Overview = ({ incidents }) => {
@@ -154,53 +119,91 @@ const Overview = ({ incidents }) => {
     );
 };
 
-const IncidentManagement = ({ incidents }) => (
-    <div>
-        <div className="rb-section-header">
-            <div className="rb-section-title">Active Incidents</div>
-            <div className="rb-header-actions">
-                <button className="rb-btn rb-btn-secondary rb-btn-sm"><Download size={14} style={{ marginRight: 6 }} /> Export List</button>
-                <button className="rb-btn rb-btn-primary rb-btn-sm"><Siren size={14} style={{ marginRight: 6 }} /> Create Incident</button>
+const IncidentManagement = ({ incidents, onRefresh }) => {
+    const [users, setUsers] = useState([]);
+    const [assigningId, setAssigningId] = useState(null);
+    const [selectedIncident, setSelectedIncident] = useState(null);
+
+    useEffect(() => {
+        getUsers()
+            .then(res => setUsers(res.data))
+            .catch(err => console.error("Fetch users error:", err));
+    }, []);
+
+    const responders = users.filter(u => u.role === "RESPONDER");
+
+    const handleAssign = async (reportId, responderId) => {
+        setAssigningId(reportId);
+        try {
+            await assignResponder(reportId, responderId || null);
+            onRefresh();
+        } catch (err) {
+            console.error("Assign error", err);
+            alert("Failed to assign responder");
+        }
+        setAssigningId(null);
+    };
+
+    return (
+        <div className="official-incidents">
+            <div className="rb-section-header">
+                <div>
+                    <div className="rb-section-title">Active Incidents</div>
+                    <div className="rb-section-sub">Assign priority teams and manage real-time alerts</div>
+                </div>
             </div>
-        </div>
-        <div className="rb-filters">
-            <input className="rb-search-input" placeholder="Search by ID, Resident, or Type..." />
-            <select className="rb-filter-select"><option>Priority: All</option><option>High</option><option>Medium</option></select>
-            <select className="rb-filter-select"><option>Status: All</option><option>Pending</option><option>Responding</option><option>Resolved</option></select>
-            <select className="rb-filter-select"><option>Zone: All</option><option>Zone 1</option><option>Zone 2</option></select>
-        </div>
-        <div className="rb-card">
-            <div className="rb-table-wrap">
-                <table className="rb-table">
-                    <thead>
-                        <tr>
-                            <th>ID</th><th>Incident Type</th><th>Resident</th><th>Priority</th><th>Status</th><th>Response Team</th><th>Time</th><th>Action</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {incidents.map(i => (
-                            <tr key={i.id}>
-                                <td><code>INC-{i.id}</code></td>
-                                <td>{i.incidentType}</td>
-                                <td>{i.user?.firstName} {i.user?.lastName}</td>
-                                <td><span className={`rb-badge ${i.urgency?.toLowerCase() || 'medium'}`}>{i.urgency || 'Medium'}</span></td>
-                                <td><span className={`rb-badge ${i.status.toLowerCase()}`}>{i.status}</span></td>
-                                <td style={{ fontWeight: 600 }}>{i.assignedTeam || "—"}</td>
-                                <td style={{ color: "var(--gray-500)" }}>{new Date(i.createdAt).toLocaleDateString()}</td>
-                                <td>
-                                    <div style={{ display: "flex", gap: 5 }}>
-                                        <button className="rb-btn rb-btn-secondary rb-btn-sm">Details</button>
-                                        <button className="rb-btn rb-btn-primary rb-btn-sm">Assign</button>
-                                    </div>
-                                </td>
+
+            <div className="rb-card">
+                <div className="rb-table-wrap">
+                    <table className="rb-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Type</th>
+                                <th>Priority</th>
+                                <th>Resident</th>
+                                <th>Assigned To</th>
+                                <th>Time</th>
+                                <th>Status</th>
+                                <th style={{ textAlign: "right" }}>Action</th>
                             </tr>
-                        ))}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            {incidents.map(i => (
+                                <tr key={i.id}>
+                                    <td><code>INC-{i.id}</code></td>
+                                    <td>{i.incidentType}</td>
+                                    <td><span className={`rb-badge ${i.urgency?.toLowerCase() || 'medium'}`}>{i.urgency || 'Medium'}</span></td>
+                                    <td>{i.user?.firstName} {i.user?.lastName}</td>
+                                    <td>
+                                        {i.responder ? (
+                                            `${i.responder.firstName} ${i.responder.lastName}`
+                                        ) : (
+                                            <span style={{ color: "var(--gray-400)", fontStyle: "italic" }}>Unassigned</span>
+                                        )}
+                                    </td>
+                                    <td>{new Date(i.createdAt).toLocaleTimeString()}</td>
+                                    <td><span className={`rb-badge ${i.status.toLowerCase()}`}>{i.status}</span></td>
+                                    <td style={{ textAlign: "right" }}>
+                                        <button className="rb-btn rb-btn-secondary rb-btn-sm" onClick={() => setSelectedIncident(i)}>Details</button>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
             </div>
+
+            {selectedIncident && (
+                <IncidentDetailModal
+                    incident={selectedIncident}
+                    onClose={() => setSelectedIncident(null)}
+                    onRefresh={onRefresh}
+                />
+            )}
         </div>
-    </div>
-);
+    );
+};
 
 const ResidentDirectory = () => (
     <div>
@@ -249,15 +252,16 @@ export default function DashboardOfficial({ user }) {
     const [showLogout, setShowLogout] = useState(false);
     const [incidents, setIncidents] = useState([]);
 
+    const fetchIncidents = async () => {
+        try {
+            const res = await getReports();
+            setIncidents(res.data);
+        } catch (err) {
+            console.error("Fetch incidents error:", err);
+        }
+    };
+
     useEffect(() => {
-        const fetchIncidents = async () => {
-            try {
-                const res = await getReports();
-                setIncidents(res.data);
-            } catch (err) {
-                console.error("Fetch incidents error:", err);
-            }
-        };
         fetchIncidents();
         const interval = setInterval(fetchIncidents, 30000); // Polling every 30s
         return () => clearInterval(interval);
@@ -271,7 +275,8 @@ export default function DashboardOfficial({ user }) {
 
     const screens = {
         overview: <Overview incidents={incidents} />,
-        incidents: <IncidentManagement incidents={incidents} />,
+        incidents: <IncidentManagement incidents={incidents} onRefresh={fetchIncidents} />,
+        evacuation: <ManageEvacuationCenters />,
         residents: <ResidentDirectory />,
         announcements: <div className="rb-empty"><div className="rb-empty-icon"><Megaphone size={48} /></div><div className="rb-empty-text">Announcement Creation Panel</div></div>,
         resources: <div className="rb-empty"><div className="rb-empty-icon"><Package size={48} /></div><div className="rb-empty-text">Inventory & Resource Module</div></div>,
@@ -282,6 +287,7 @@ export default function DashboardOfficial({ user }) {
     const titles = {
         overview: "Command Center Overview",
         incidents: "Incident Management",
+        evacuation: "Evacuation Centers",
         residents: "Resident Directory",
         announcements: "Manage Announcements",
         resources: "Resource Inventory",
@@ -290,27 +296,52 @@ export default function DashboardOfficial({ user }) {
     };
 
     return (
-        <div className="rb-layout">
-            <Sidebar
-                active={active}
-                setActive={setActive}
-                user={user}
-                onLogoutClick={() => setShowLogout(true)}
-            />
-            <div className="rb-main">
-                <header className="rb-header">
-                    <div className="rb-header-title">{titles[active]}</div>
-                    <div className="rb-header-actions">
-                        <div className="rb-notif-bell">
-                            <Bell size={20} />
-                            <div className="rb-notif-count">5</div>
-                        </div>
+        <div className="dashboard-container" style={{ width: '100%', maxWidth: '1200px', margin: '0 auto' }}>
+            <header className="rb-header" style={{ marginBottom: '20px', borderRadius: '12px' }}>
+                <div className="rb-header-title">{titles[active]}</div>
+                <div className="rb-header-actions">
+                    <div className="rb-notif-bell">
+                        <Bell size={20} />
+                        <div className="rb-notif-count">5</div>
                     </div>
-                </header>
-                <div className="rb-content">
-                    {screens[active]}
                 </div>
+            </header>
+
+            <div className="rb-tabs" style={{ display: 'flex', gap: '20px', padding: '0 20px', borderBottom: '1px solid #e5e7eb', marginBottom: '24px', overflowX: 'auto' }}>
+                {OFFICIAL_NAV.map(n => (
+                    n.id !== 'logout' && n.id !== 'profile' ? (
+                        <button
+                            key={n.id}
+                            className={`rb-tab ${active === n.id ? 'active' : ''}`}
+                            onClick={() => setActive(n.id)}
+                            style={{
+                                padding: '12px 0',
+                                borderBottom: active === n.id ? '2px solid var(--amber-600, #d97706)' : '2px solid transparent',
+                                background: 'transparent',
+                                borderTop: 'none', borderLeft: 'none', borderRight: 'none',
+                                cursor: 'pointer',
+                                fontWeight: active === n.id ? '600' : '400',
+                                color: active === n.id ? 'var(--amber-600, #d97706)' : '#6B7280',
+                                whiteSpace: 'nowrap'
+                            }}
+                        >
+                            <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                {n.icon} {n.label}
+                            </span>
+                        </button>
+                    ) : null
+                ))}
             </div>
+
+            <div className="rb-content">
+                {screens[active]}
+            </div>
+
+            <LogoutModal
+                show={showLogout}
+                onClose={() => setShowLogout(false)}
+                onConfirm={handleLogout}
+            />
         </div>
     );
 }

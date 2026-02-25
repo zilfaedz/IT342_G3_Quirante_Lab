@@ -39,6 +39,8 @@ public class ReportController {
     public ResponseEntity<?> submitReport(
             @RequestParam("description") String description,
             @RequestParam("location") String location,
+            @RequestParam(value = "latitude", required = false) Double latitude,
+            @RequestParam(value = "longitude", required = false) Double longitude,
             @RequestParam("incidentType") String incidentType,
             @RequestParam(value = "urgency", defaultValue = "Medium") String urgency,
             @RequestParam(value = "photo", required = false) MultipartFile photo) {
@@ -54,6 +56,8 @@ public class ReportController {
         report.setUser(currentUser);
         report.setDescription(description);
         report.setLocation(location);
+        report.setLatitude(latitude);
+        report.setLongitude(longitude);
         report.setIncidentType(incidentType);
         report.setUrgency(urgency);
 
@@ -107,14 +111,88 @@ public class ReportController {
 
         List<EmergencyReport> reports;
 
-        // If OFFICIAL/CAPTAIN/RESPONDER, return all; if RESIDENT, return only theirs
+        // If OFFICIAL/CAPTAIN/RESPONDER, return all reports in their barangay; if
+        // RESIDENT, return only theirs
         String role = currentUser.getRole();
-        if ("OFFICIAL".equals(role) || "CAPTAIN".equals(role) || "RESPONDER".equals(role)) {
-            reports = reportRepository.findAllByOrderByCreatedAtDesc();
+        if ("OFFICIAL".equals(role) || "Barangay Captain".equals(role) || "RESPONDER".equals(role)) {
+            String userBarangayCode = currentUser.getBarangayCode();
+            if (userBarangayCode != null && !userBarangayCode.isEmpty()) {
+                reports = reportRepository.findByUserBarangayCodeOrderByCreatedAtDesc(userBarangayCode);
+            } else {
+                reports = reportRepository.findAllByOrderByCreatedAtDesc(); // Fallback if no barangay code
+            }
         } else {
             reports = reportRepository.findByUserIdOrderByCreatedAtDesc(currentUser.getId());
         }
 
         return ResponseEntity.ok(reports);
+    }
+
+    @PutMapping("/{id}/assign")
+    public ResponseEntity<?> assignResponder(@PathVariable Long id, @RequestBody Map<String, Long> payload) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        User currentUser = userRepository.findByEmail(auth.getName()).orElse(null);
+
+        if (currentUser == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "User not authenticated"));
+        }
+
+        String role = currentUser.getRole();
+        if (!"Barangay Captain".equalsIgnoreCase(role) && !"OFFICIAL".equalsIgnoreCase(role)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(Map.of("message", "Only Captains and Officials can assign responders."));
+        }
+
+        EmergencyReport report = reportRepository.findById(id).orElse(null);
+        if (report == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("message", "Report not found."));
+        }
+
+        Long responderId = payload.get("responderId");
+        if (responderId == null) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Responder ID is required."));
+        }
+
+        User responder = userRepository.findById(responderId).orElse(null);
+        if (responder == null || !"RESPONDER".equalsIgnoreCase(responder.getRole())) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Target user must be a valid Responder."));
+        }
+
+        report.setResponder(responder);
+        reportRepository.save(report);
+
+        return ResponseEntity.ok(Map.of("message", "Responder assigned successfully", "report", report));
+    }
+
+    @PutMapping("/{id}/status")
+    public ResponseEntity<?> updateReportStatus(@PathVariable Long id, @RequestBody Map<String, String> payload) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        User currentUser = userRepository.findByEmail(auth.getName()).orElse(null);
+
+        if (currentUser == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "User not authenticated"));
+        }
+
+        String role = currentUser.getRole();
+        if (!"Barangay Captain".equalsIgnoreCase(role) && !"OFFICIAL".equalsIgnoreCase(role)
+                && !"RESPONDER".equalsIgnoreCase(role)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(Map.of("message", "Only Captains, Officials, and Responders can update report status."));
+        }
+
+        EmergencyReport report = reportRepository.findById(id).orElse(null);
+        if (report == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("message", "Report not found."));
+        }
+
+        String newStatus = payload.get("status");
+        if (newStatus == null || newStatus.isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Status is required."));
+        }
+
+        report.setStatus(newStatus);
+        reportRepository.save(report);
+
+        return ResponseEntity.ok(Map.of("message", "Report status updated successfully", "report", report));
     }
 }

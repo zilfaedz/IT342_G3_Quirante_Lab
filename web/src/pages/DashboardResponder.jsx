@@ -24,45 +24,7 @@ const RESPONDER_NAV = [
     { icon: <Lock size={18} />, label: "Logout", id: "logout" },
 ];
 
-const Sidebar = ({ active, setActive, user, onLogoutClick }) => (
-    <aside className="rb-sidebar responder">
-        <div className="rb-sidebar-logo">
-            <div className="logo-icon responder">RB</div>
-            <div className="logo-text">
-                ReadyBarangay
-                <span>Responder Portal</span>
-            </div>
-        </div>
-        <nav className="rb-nav">
-            <div className="rb-nav-section">Field Operations</div>
-            {RESPONDER_NAV.map(n => (
-                <div
-                    key={n.id}
-                    className={`rb-nav-item${active === n.id ? " active" : ""}`}
-                    onClick={() => {
-                        if (n.id === "logout") {
-                            onLogoutClick();
-                        } else {
-                            setActive(n.id);
-                        }
-                    }}
-                >
-                    {n.icon}
-                    {n.label}
-                </div>
-            ))}
-        </nav>
-        <div className="rb-sidebar-footer">
-            <div className="rb-user-pill">
-                <div className="rb-avatar">{user?.firstName?.charAt(0) || 'R'}</div>
-                <div className="rb-user-info">
-                    <div className="rb-user-name">{user?.firstName} {user?.lastName || "Responder"}</div>
-                    <div className="rb-user-role">Team Lead · Alpha</div>
-                </div>
-            </div>
-        </div>
-    </aside>
-);
+// Local sidebar removed in favor of global Sidebar and horizontal tabs.
 
 // ---- SCREENS ----
 const MissionControl = ({ incidents }) => {
@@ -188,9 +150,8 @@ const MissionControl = ({ incidents }) => {
     );
 };
 
-// ---- MAIN EXPORT ----
 export default function DashboardResponder({ user }) {
-    const [active, setActive] = useState("mission");
+    const [active, setActive] = useState("missions");
     const [showLogout, setShowLogout] = useState(false);
     const [incidents, setIncidents] = useState([]);
 
@@ -215,7 +176,7 @@ export default function DashboardResponder({ user }) {
     };
 
     const screens = {
-        mission: <MissionControl incidents={incidents} />,
+        missions: <MissionControl incidents={incidents} />,
         incidents: <div className="rb-card">
             <div className="rb-table-wrap">
                 <table className="rb-table">
@@ -242,7 +203,7 @@ export default function DashboardResponder({ user }) {
     };
 
     const titles = {
-        mission: "Mission Control",
+        missions: "Mission Control",
         incidents: "Incident Tasks",
         map: "Response Map",
         announcements: "Dispatches & Alerts",
@@ -251,28 +212,53 @@ export default function DashboardResponder({ user }) {
     };
 
     return (
-        <div className="rb-layout">
-            <Sidebar
-                active={active}
-                setActive={setActive}
-                user={user}
-                onLogoutClick={() => setShowLogout(true)}
-            />
-            <div className="rb-main">
-                <header className="rb-header">
-                    <div className="rb-header-title">{titles[active]}</div>
-                    <div className="rb-header-actions">
-                        <span className="responder-badge">ON DUTY</span>
-                        <div className="rb-notif-bell">
-                            <Bell size={20} />
-                            <div className="rb-notif-count">2</div>
-                        </div>
+        <div className="dashboard-container" style={{ width: '100%', maxWidth: '1200px', margin: '0 auto' }}>
+            <header className="rb-header" style={{ marginBottom: '20px', borderRadius: '12px' }}>
+                <div className="rb-header-title">{titles[active]}</div>
+                <div className="rb-header-actions">
+                    <span className="responder-badge">ON DUTY</span>
+                    <div className="rb-notif-bell">
+                        <Bell size={20} />
+                        <div className="rb-notif-count">2</div>
                     </div>
-                </header>
-                <div className="rb-content">
-                    {screens[active]}
                 </div>
+            </header>
+
+            <div className="rb-tabs" style={{ display: 'flex', gap: '20px', padding: '0 20px', borderBottom: '1px solid #e5e7eb', marginBottom: '24px', overflowX: 'auto' }}>
+                {RESPONDER_NAV.map(n => (
+                    n.id !== 'logout' && n.id !== 'profile' ? (
+                        <button
+                            key={n.id}
+                            className={`rb-tab ${active === n.id ? 'active' : ''}`}
+                            onClick={() => setActive(n.id)}
+                            style={{
+                                padding: '12px 0',
+                                borderBottom: active === n.id ? '2px solid var(--primary, #2563eb)' : '2px solid transparent',
+                                background: 'transparent',
+                                borderTop: 'none', borderLeft: 'none', borderRight: 'none',
+                                cursor: 'pointer',
+                                fontWeight: active === n.id ? '600' : '400',
+                                color: active === n.id ? 'var(--primary, #2563eb)' : '#6B7280',
+                                whiteSpace: 'nowrap'
+                            }}
+                        >
+                            <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                {n.icon} {n.label}
+                            </span>
+                        </button>
+                    ) : null
+                ))}
             </div>
+
+            <div className="rb-content">
+                {screens[active]}
+            </div>
+
+            <LogoutModal
+                show={showLogout}
+                onClose={() => setShowLogout(false)}
+                onConfirm={handleLogout}
+            />
         </div>
     );
 }

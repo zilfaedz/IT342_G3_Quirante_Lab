@@ -15,11 +15,21 @@ public class EmergencyReport {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "responder_id", nullable = true)
+    private User responder;
+
     @Column(columnDefinition = "TEXT", nullable = false)
     private String description;
 
     @Column(nullable = false)
     private String location;
+
+    @Column(nullable = true)
+    private Double latitude;
+
+    @Column(nullable = true)
+    private Double longitude;
 
     @Column(nullable = false)
     private String incidentType; // e.g., "flood", "fire", "earthquake"
@@ -58,6 +68,14 @@ public class EmergencyReport {
         this.user = user;
     }
 
+    public User getResponder() {
+        return responder;
+    }
+
+    public void setResponder(User responder) {
+        this.responder = responder;
+    }
+
     public String getDescription() {
         return description;
     }
@@ -72,6 +90,22 @@ public class EmergencyReport {
 
     public void setLocation(String location) {
         this.location = location;
+    }
+
+    public Double getLatitude() {
+        return latitude;
+    }
+
+    public void setLatitude(Double latitude) {
+        this.latitude = latitude;
+    }
+
+    public Double getLongitude() {
+        return longitude;
+    }
+
+    public void setLongitude(Double longitude) {
+        this.longitude = longitude;
     }
 
     public String getIncidentType() {

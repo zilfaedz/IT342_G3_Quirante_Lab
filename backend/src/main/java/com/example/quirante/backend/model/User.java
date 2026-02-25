@@ -21,9 +21,32 @@ public class User {
     private String address;
     private String contactNumber;
     private String barangay;
+    private String barangayCode;
+    private String cityName;
+    private String cityCode;
+    private String provinceName;
+    private String provinceCode;
+    private String regionName;
+    private String regionCode;
+    private String street;
+    private String lotBlockNumber;
 
     @Column(nullable = false)
     private String role = "RESIDENT"; // default role
+
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    private BarangayCaptain captainDetails;
+
+    @Column(nullable = false)
+    private String accountStatus = "APPROVED"; // Default to APPROVED for existing users / roles
+    private String rejectionReason;
+    private String additionalDocumentsMessage;
+
+    private String purok;
+    private boolean directoryOptIn = false;
+
+    @Transient
+    private String captainName;
 
     public Long getId() {
         return id;
@@ -97,12 +120,140 @@ public class User {
         this.barangay = barangay;
     }
 
+    public String getBarangayCode() {
+        return barangayCode;
+    }
+
+    public void setBarangayCode(String barangayCode) {
+        this.barangayCode = barangayCode;
+    }
+
+    public String getCityName() {
+        return cityName;
+    }
+
+    public void setCityName(String cityName) {
+        this.cityName = cityName;
+    }
+
+    public String getCityCode() {
+        return cityCode;
+    }
+
+    public void setCityCode(String cityCode) {
+        this.cityCode = cityCode;
+    }
+
+    public String getProvinceName() {
+        return provinceName;
+    }
+
+    public void setProvinceName(String provinceName) {
+        this.provinceName = provinceName;
+    }
+
+    public String getProvinceCode() {
+        return provinceCode;
+    }
+
+    public void setProvinceCode(String provinceCode) {
+        this.provinceCode = provinceCode;
+    }
+
+    public String getRegionName() {
+        return regionName;
+    }
+
+    public void setRegionName(String regionName) {
+        this.regionName = regionName;
+    }
+
+    public String getRegionCode() {
+        return regionCode;
+    }
+
+    public void setRegionCode(String regionCode) {
+        this.regionCode = regionCode;
+    }
+
+    public String getStreet() {
+        return street;
+    }
+
+    public void setStreet(String street) {
+        this.street = street;
+    }
+
+    public String getLotBlockNumber() {
+        return lotBlockNumber;
+    }
+
+    public void setLotBlockNumber(String lotBlockNumber) {
+        this.lotBlockNumber = lotBlockNumber;
+    }
+
     public String getRole() {
         return role;
     }
 
     public void setRole(String role) {
         this.role = role;
+    }
+
+    public BarangayCaptain getCaptainDetails() {
+        return captainDetails;
+    }
+
+    public void setCaptainDetails(BarangayCaptain captainDetails) {
+        this.captainDetails = captainDetails;
+    }
+
+    public String getAccountStatus() {
+        return accountStatus;
+    }
+
+    public void setAccountStatus(String accountStatus) {
+        this.accountStatus = accountStatus;
+    }
+
+    public String getRejectionReason() {
+        return rejectionReason;
+    }
+
+    public void setRejectionReason(String rejectionReason) {
+        this.rejectionReason = rejectionReason;
+    }
+
+    public String getAdditionalDocumentsMessage() {
+        return additionalDocumentsMessage;
+    }
+
+    public void setAdditionalDocumentsMessage(String additionalDocumentsMessage) {
+        this.additionalDocumentsMessage = additionalDocumentsMessage;
+    }
+
+    public String getPurok() {
+        return purok;
+    }
+
+    public void setPurok(String purok) {
+        this.purok = purok;
+    }
+
+    public boolean isDirectoryOptIn() {
+        return directoryOptIn;
+    }
+
+    public void setDirectoryOptIn(boolean directoryOptIn) {
+        this.directoryOptIn = directoryOptIn;
+    }
+
+    public String getCaptainName() {
+        return captainName;
+    }
+
+    public void setCaptainName(String captainName) {
+        this.captainName = captainName;
     }
 
     @PrePersist

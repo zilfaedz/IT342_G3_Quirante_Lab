@@ -2,13 +2,17 @@ import { useState } from "react";
 import {
     LayoutDashboard, AlertTriangle, FileText, Users, Megaphone,
     User, Lock, Siren, Crown, Coins, Package, BarChart3, Bell,
-    Plus, Search, X, Check, Trash2, Edit2
+    Plus, Search, X, Check, Trash2, Edit2, Building2
 } from "lucide-react";
 import "./DashboardCaptain.css";
 import "./DashboardOfficial.css";
 import "../global.css";
 import LogoutModal from "../components/LogoutModal";
-import { getReports } from "../services/api";
+import TransferOwnershipModal from "../components/TransferOwnershipModal";
+import AlertModal from "../components/AlertModal";
+import IncidentDetailModal from "../components/IncidentDetailModal";
+import ManageEvacuationCenters from "../components/ManageEvacuationCenters";
+import { getReports, getUsers, updateUserRole, transferCaptain, assignResponder } from "../services/api";
 import { useEffect } from "react";
 
 // ---- ICONS (using Lucide) ----
@@ -19,51 +23,14 @@ const CAPTAIN_NAV = [
     { icon: <LayoutDashboard size={18} />, label: "Command Overview", id: "overview" },
     { icon: <AlertTriangle size={18} />, label: "All Incidents", id: "incidents" },
     { icon: <FileText size={18} />, label: "Budget & Resources", id: "resources" },
+    { icon: <Building2 size={18} />, label: "Evacuation Centers", id: "evacuation" },
     { icon: <Users size={18} />, label: "Personnel Management", id: "personnel" },
     { icon: <Megaphone size={18} />, label: "Official Announcements", id: "announcements" },
     { icon: <User size={18} />, label: "Profile", id: "profile" },
     { icon: <Lock size={18} />, label: "Logout", id: "logout" },
 ];
 
-const Sidebar = ({ active, setActive, user, onLogoutClick }) => (
-    <aside className="rb-sidebar captain">
-        <div className="rb-sidebar-logo">
-            <div className="logo-icon captain">RB</div>
-            <div className="logo-text">
-                ReadyBarangay
-                <span>Captain Portal</span>
-            </div>
-        </div>
-        <nav className="rb-nav">
-            <div className="rb-nav-section">Executive Command</div>
-            {CAPTAIN_NAV.map(n => (
-                <div
-                    key={n.id}
-                    className={`rb-nav-item${active === n.id ? " active" : ""}`}
-                    onClick={() => {
-                        if (n.id === "logout") {
-                            onLogoutClick();
-                        } else {
-                            setActive(n.id);
-                        }
-                    }}
-                >
-                    {n.icon}
-                    {n.label}
-                </div>
-            ))}
-        </nav>
-        <div className="rb-sidebar-footer">
-            <div className="rb-user-pill">
-                <div className="rb-avatar captain">{user?.firstName?.charAt(0) || 'C'}</div>
-                <div className="rb-user-info">
-                    <div className="rb-user-name">{user?.firstName} {user?.lastName || "Captain"}</div>
-                    <div className="rb-user-role">Barangay Captain</div>
-                </div>
-            </div>
-        </div>
-    </aside>
-);
+// Local sidebar removed in favor of global Sidebar and horizontal tabs.
 
 // ---- SCREEN: COMMAND OVERVIEW ----
 const CommandOverview = ({ incidents }) => {
@@ -178,23 +145,45 @@ const CommandOverview = ({ incidents }) => {
 
 // ---- SCREEN: PERSONNEL MANAGEMENT ----
 const PersonnelManagement = () => {
-    const [users, setUsers] = useState([
-        { id: 101, name: "Ricardo Santos", role: "OFFICIAL", email: "ricardo@brgy.ph", status: "Active" },
-        { id: 102, name: "Elena Reyes", role: "OFFICIAL", email: "elena@brgy.ph", status: "Active" },
-        { id: 201, name: "Mario Gomez", role: "RESPONDER", email: "mario@brgy.ph", status: "onDuty" },
-        { id: 202, name: "Sarah Lim", role: "RESPONDER", email: "sarah@brgy.ph", status: "offDuty" },
-        { id: 301, name: "Juan dela Cruz", role: "RESIDENT", email: "juan@gmail.com", status: "Verified" },
-        { id: 302, name: "Maria Clara", role: "RESIDENT", email: "maria@yahoo.com", status: "Verified" },
-        { id: 303, name: "Pedro Penduko", role: "RESIDENT", email: "pedro@outlook.com", status: "Pending" },
-    ]);
+    const [users, setUsers] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
 
-    const handleRoleChange = (userId, newRole) => {
-        setUsers(users.map(u => u.id === userId ? { ...u, role: newRole } : u));
+    const fetchUsers = async () => {
+        try {
+            setLoading(true);
+            const res = await getUsers();
+            setUsers(res.data);
+            setError(null);
+        } catch (err) {
+            console.error("Fetch users error:", err);
+            setError("Failed to load user directory.");
+        } finally {
+            setLoading(false);
+        }
     };
 
-    const officials = users.filter(u => u.role === "OFFICIAL");
-    const responders = users.filter(u => u.role === "RESPONDER");
-    const residents = users.filter(u => u.role === "RESIDENT");
+    useEffect(() => {
+        fetchUsers();
+    }, []);
+
+    const handleRoleChange = async (userId, newRole) => {
+        try {
+            await updateUserRole(userId, newRole);
+            setUsers(users.map(u => u.id === userId ? { ...u, role: newRole } : u));
+        } catch (err) {
+            console.error("Role update error:", err);
+            alert("Failed to update user role.");
+        }
+    };
+
+    if (loading) return <div className="rb-loading">Loading personnel directory...</div>;
+    if (error) return <div className="rb-error">{error}</div>;
+
+    const getRole = (r) => (r || "").toUpperCase();
+    const officials = users.filter(u => getRole(u.role) === "OFFICIAL" || getRole(u.role) === "CAPTAIN" || getRole(u.role) === "BARANGAY CAPTAIN");
+    const responders = users.filter(u => getRole(u.role) === "RESPONDER");
+    const residents = users.filter(u => getRole(u.role) === "RESIDENT");
 
     const UserTable = ({ title, data, badgeClass }) => (
         <div className="rb-card" style={{ marginBottom: 24 }}>
@@ -203,45 +192,54 @@ const PersonnelManagement = () => {
                 <span className={`rb-badge ${badgeClass}`}>{data.length} Members</span>
             </div>
             <div className="rb-card-body" style={{ padding: 0 }}>
-                <table className="rb-table">
-                    <thead>
-                        <tr>
-                            <th>Name</th>
-                            <th>Email</th>
-                            <th>Status</th>
-                            <th style={{ textAlign: "right" }}>Management</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {data.map(u => (
-                            <tr key={u.id}>
-                                <td>
-                                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                                        <div className="rb-avatar" style={{ width: 28, height: 28, fontSize: 11 }}>{u.name[0]}</div>
-                                        <strong>{u.name}</strong>
-                                    </div>
-                                </td>
-                                <td style={{ fontSize: 12, color: "var(--gray-500)" }}>{u.email}</td>
-                                <td>
-                                    <span className={`rb-status-pill ${u.status === 'Active' || u.status === 'onDuty' || u.status === 'Verified' ? 'active' : 'pending'}`}>
-                                        {u.status}
-                                    </span>
-                                </td>
-                                <td style={{ textAlign: "right" }}>
-                                    <select
-                                        className="rb-select-sm"
-                                        value={u.role}
-                                        onChange={(e) => handleRoleChange(u.id, e.target.value)}
-                                    >
-                                        <option value="RESIDENT">Resident</option>
-                                        <option value="OFFICIAL">Official</option>
-                                        <option value="RESPONDER">Responder</option>
-                                    </select>
-                                </td>
+                {data.length === 0 ? (
+                    <div className="rb-empty-small" style={{ padding: "20px", color: "var(--gray-500)" }}>No members in this category.</div>
+                ) : (
+                    <table className="rb-table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Status</th>
+                                <th style={{ textAlign: "right" }}>Management</th>
                             </tr>
-                        ))}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            {data.map(u => (
+                                <tr key={u.id}>
+                                    <td>
+                                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                            <div className="rb-avatar" style={{ width: 28, height: 28, fontSize: 11 }}>
+                                                {u.firstName?.[0] || u.fullName?.[0] || u.email[0]}
+                                            </div>
+                                            <strong>{u.firstName ? `${u.firstName} ${u.lastName}` : (u.fullName || "Resident")}</strong>
+                                            {(getRole(u.role) === 'CAPTAIN' || getRole(u.role) === 'BARANGAY CAPTAIN') && <span className="rb-badge warn" style={{ fontSize: 9, padding: "2px 4px" }}>CAPTAIN</span>}
+                                        </div>
+                                    </td>
+                                    <td style={{ fontSize: 12, color: "var(--gray-500)" }}>{u.email}</td>
+                                    <td>
+                                        <span className={`rb-status-pill active`}>
+                                            Active
+                                        </span>
+                                    </td>
+                                    <td style={{ textAlign: "right" }}>
+                                        <select
+                                            className="rb-select-sm"
+                                            value={u.role}
+                                            disabled={getRole(u.role) === 'CAPTAIN' || getRole(u.role) === 'BARANGAY CAPTAIN'}
+                                            onChange={(e) => handleRoleChange(u.id, e.target.value)}
+                                        >
+                                            <option value="RESIDENT">Resident</option>
+                                            <option value="OFFICIAL">Official</option>
+                                            <option value="RESPONDER">Responder</option>
+                                            <option value="Barangay Captain" disabled>Captain</option>
+                                        </select>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                )}
             </div>
         </div>
     );
@@ -263,9 +261,167 @@ const PersonnelManagement = () => {
                 </div>
             </div>
 
-            <UserTable title="Barangay Officials" data={officials} badgeClass="warn" />
+            <UserTable title="Barangay Administration" data={officials} badgeClass="warn" />
             <UserTable title="Emergency Responders" data={responders} badgeClass="emergency" />
             <UserTable title="Registered Residents" data={residents} badgeClass="info" />
+        </div>
+    );
+};
+
+// ---- SCREEN: PROFILE / HANDOVER ----
+const CaptainProfile = ({ user }) => {
+    const [users, setUsers] = useState([]);
+    const [targetUserId, setTargetUserId] = useState("");
+    const [loading, setLoading] = useState(false);
+    const [showConfirmModal, setShowConfirmModal] = useState(false);
+    const [showAlertModal, setShowAlertModal] = useState(false);
+
+    useEffect(() => {
+        getUsers()
+            .then(res => setUsers(res.data.filter(u => u.id !== user.id)))
+            .catch(err => console.error("Fetch users error:", err));
+    }, [user.id]);
+
+    const handleTransferClick = () => {
+        // Just show the modal. The modal itself now handles the form data.
+        setShowConfirmModal(true);
+    };
+
+    return (
+        <div className="captain-profile">
+            <div className="rb-section-header">
+                <div>
+                    <div className="rb-section-title">Captain's Profile & Settings</div>
+                    <div className="rb-section-sub">Manage your executive account</div>
+                </div>
+            </div>
+
+            <div className="rb-card" style={{ maxWidth: 600, border: "1px solid var(--red-200)" }}>
+                <div className="rb-card-header" style={{ background: "var(--red-50)", borderBottom: "1px solid var(--red-100)" }}>
+                    <div className="rb-card-title" style={{ color: "var(--red-700)", display: "flex", alignItems: "center" }}>
+                        <AlertTriangle size={18} style={{ marginRight: 8 }} />
+                        Danger Zone: Transfer Ownership
+                    </div>
+                </div>
+                <div className="rb-card-body">
+                    <p style={{ fontSize: 13, marginBottom: 15, color: "var(--gray-700)" }}>
+                        Click below to initiate the transfer process. You will need to provide the new Captain's details and upload proof of election.
+                        <strong> You will lose all captain privileges once an Admin approves the transfer.</strong>
+                    </p>
+                    <button
+                        className="rb-btn rb-btn-primary"
+                        onClick={handleTransferClick}
+                        disabled={loading}
+                        style={{ background: "var(--red-600)", border: "none" }}
+                    >
+                        Initiate Captain Ownership Transfer
+                    </button>
+                </div>
+            </div>
+
+            <TransferOwnershipModal
+                show={showConfirmModal}
+                onClose={(success) => {
+                    setShowConfirmModal(false);
+                    if (success === true) {
+                        // Optional: You can trigger a UI refresh or wait for admin approval
+                    }
+                }}
+            />
+
+            <AlertModal
+                show={showAlertModal}
+                title="Selection Required"
+                message="Please select a verified barangay member from the dropdown list before attempting to transfer ownership."
+                onClose={() => setShowAlertModal(false)}
+            />
+        </div>
+    );
+};
+
+// ---- SCREEN: INCIDENT MANAGEMENT ----
+const IncidentManagement = ({ incidents, onRefresh }) => {
+    const [users, setUsers] = useState([]);
+    const [assigningId, setAssigningId] = useState(null);
+    const [selectedIncident, setSelectedIncident] = useState(null);
+
+    useEffect(() => {
+        getUsers()
+            .then(res => setUsers(res.data))
+            .catch(err => console.error("Fetch users error:", err));
+    }, []);
+
+    const responders = users.filter(u => u.role === "RESPONDER");
+
+    const handleAssign = async (reportId, responderId) => {
+        setAssigningId(reportId);
+        try {
+            await assignResponder(reportId, responderId || null);
+            onRefresh();
+        } catch (err) {
+            console.error("Assign error", err);
+            alert("Failed to assign responder");
+        }
+        setAssigningId(null);
+    };
+
+    return (
+        <div className="captain-incidents">
+            <div className="rb-section-header">
+                <div>
+                    <div className="rb-section-title">All Incidents</div>
+                    <div className="rb-section-sub">View and dispatch emergency reports</div>
+                </div>
+            </div>
+
+            <div className="rb-card">
+                <div className="rb-table-wrap">
+                    <table className="rb-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Type</th>
+                                <th>Priority</th>
+                                <th>Resident</th>
+                                <th>Assigned To</th>
+                                <th>Time</th>
+                                <th>Status</th>
+                                <th style={{ textAlign: "right" }}>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {incidents.map(i => (
+                                <tr key={i.id}>
+                                    <td><code>INC-{i.id}</code></td>
+                                    <td>{i.incidentType}</td>
+                                    <td><span className={`rb-badge ${i.urgency?.toLowerCase() || 'medium'}`}>{i.urgency || 'Medium'}</span></td>
+                                    <td>{i.user?.firstName} {i.user?.lastName}</td>
+                                    <td>
+                                        {i.responder ? (
+                                            `${i.responder.firstName} ${i.responder.lastName}`
+                                        ) : (
+                                            <span style={{ color: "var(--gray-400)", fontStyle: "italic" }}>Unassigned</span>
+                                        )}
+                                    </td>
+                                    <td>{new Date(i.createdAt).toLocaleTimeString()}</td>
+                                    <td><span className={`rb-badge ${i.status.toLowerCase()}`}>{i.status}</span></td>
+                                    <td style={{ textAlign: "right" }}>
+                                        <button className="rb-btn rb-btn-secondary rb-btn-sm" onClick={() => setSelectedIncident(i)}>Details</button>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            {selectedIncident && (
+                <IncidentDetailModal
+                    incident={selectedIncident}
+                    onClose={() => setSelectedIncident(null)}
+                    onRefresh={onRefresh}
+                />
+            )}
         </div>
     );
 };
@@ -276,15 +432,16 @@ export default function DashboardCaptain({ user }) {
     const [showLogout, setShowLogout] = useState(false);
     const [incidents, setIncidents] = useState([]);
 
+    const fetchIncidents = async () => {
+        try {
+            const res = await getReports();
+            setIncidents(res.data);
+        } catch (err) {
+            console.error("Fetch incidents error:", err);
+        }
+    };
+
     useEffect(() => {
-        const fetchIncidents = async () => {
-            try {
-                const res = await getReports();
-                setIncidents(res.data);
-            } catch (err) {
-                console.error("Fetch incidents error:", err);
-            }
-        };
         fetchIncidents();
         const interval = setInterval(fetchIncidents, 30000); // 30s polling
         return () => clearInterval(interval);
@@ -298,53 +455,55 @@ export default function DashboardCaptain({ user }) {
 
     const screens = {
         overview: <CommandOverview incidents={incidents} />,
-        incidents: <div className="rb-card">
-            <div className="rb-table-wrap">
-                <table className="rb-table">
-                    <thead><tr><th>ID</th><th>Type</th><th>Priority</th><th>Resident</th><th>Time</th><th>Status</th></tr></thead>
-                    <tbody>
-                        {incidents.map(i => (
-                            <tr key={i.id}>
-                                <td><code>INC-{i.id}</code></td>
-                                <td>{i.incidentType}</td>
-                                <td><span className={`rb-badge ${i.urgency?.toLowerCase() || 'medium'}`}>{i.urgency || 'Medium'}</span></td>
-                                <td>{i.user?.firstName} {i.user?.lastName}</td>
-                                <td>{new Date(i.createdAt).toLocaleTimeString()}</td>
-                                <td><span className={`rb-badge ${i.status.toLowerCase()}`}>{i.status}</span></td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-            </div>
-        </div>,
+        incidents: <IncidentManagement incidents={incidents} onRefresh={fetchIncidents} />,
+        evacuation: <ManageEvacuationCenters />,
         resources: <div className="rb-empty"><div className="rb-empty-icon"><FileText size={48} /></div><div className="rb-empty-text">Budget & Resource Tracking Module</div></div>,
         personnel: <PersonnelManagement />,
         announcements: <div className="rb-empty"><div className="rb-empty-icon"><Megaphone size={48} /></div><div className="rb-empty-text">Executive Announcement Panel</div></div>,
-        profile: <div className="rb-empty"><div className="rb-empty-icon"><User size={48} /></div><div className="rb-empty-text">Captain's Settings</div></div>,
+        profile: <CaptainProfile user={user} />,
     };
 
     return (
-        <div className="rb-layout">
-            <Sidebar
-                active={active}
-                setActive={setActive}
-                user={user}
-                onLogoutClick={() => setShowLogout(true)}
-            />
-            <div className="rb-main">
-                <header className="rb-header">
-                    <div className="rb-header-title">Executive Command Center</div>
-                    <div className="rb-header-actions">
-                        <span className="captain-badge">COMMAND ACTIVE</span>
-                        <div className="rb-notif-bell">
-                            <Bell size={20} />
-                            <div className="rb-notif-count">{incidents.filter(i => i.status === 'PENDING').length}</div>
-                        </div>
+        <div className="dashboard-container" style={{ width: '100%', maxWidth: '1200px', margin: '0 auto' }}>
+            <header className="rb-header" style={{ marginBottom: '20px', borderRadius: '12px' }}>
+                <div className="rb-header-title">Executive Command Center</div>
+                <div className="rb-header-actions">
+                    <span className="captain-badge">COMMAND ACTIVE</span>
+                    <div className="rb-notif-bell">
+                        <Bell size={20} />
+                        <div className="rb-notif-count">{incidents.filter(i => i.status === 'PENDING').length}</div>
                     </div>
-                </header>
-                <div className="rb-content">
-                    {screens[active]}
                 </div>
+            </header>
+
+            <div className="rb-tabs" style={{ display: 'flex', gap: '20px', padding: '0 20px', borderBottom: '1px solid #e5e7eb', marginBottom: '24px', overflowX: 'auto' }}>
+                {CAPTAIN_NAV.map(n => (
+                    n.id !== 'logout' && n.id !== 'profile' ? (
+                        <button
+                            key={n.id}
+                            className={`rb-tab ${active === n.id ? 'active' : ''}`}
+                            onClick={() => setActive(n.id)}
+                            style={{
+                                padding: '12px 0',
+                                borderBottom: active === n.id ? '2px solid var(--red-600, #dc2626)' : '2px solid transparent',
+                                background: 'transparent',
+                                borderTop: 'none', borderLeft: 'none', borderRight: 'none',
+                                cursor: 'pointer',
+                                fontWeight: active === n.id ? '600' : '400',
+                                color: active === n.id ? 'var(--red-600, #dc2626)' : '#6B7280',
+                                whiteSpace: 'nowrap'
+                            }}
+                        >
+                            <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                {n.icon} {n.label}
+                            </span>
+                        </button>
+                    ) : null
+                ))}
+            </div>
+
+            <div className="rb-content">
+                {screens[active]}
             </div>
 
             <LogoutModal
