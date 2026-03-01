@@ -28,6 +28,30 @@ public class EvacuationCenter {
     @Column(nullable = false)
     private String status = "Open"; // Open, Full, Closed
 
+    @Column(nullable = true)
+    private String barangayCode;
+
+    @Column(nullable = true)
+    private String barangayName;
+
+    @Column(nullable = true)
+    private String cityCode;
+
+    @Column(nullable = true)
+    private String cityName;
+
+    @Column(nullable = true)
+    private String provinceCode;
+
+    @Column(nullable = true)
+    private String provinceName;
+
+    @Column(nullable = true)
+    private Long createdByUserId;
+
+    @Column(nullable = true)
+    private String createdByRole;
+
     public Long getId() {
         return id;
     }
@@ -82,5 +106,69 @@ public class EvacuationCenter {
 
     public void setStatus(String status) {
         this.status = status;
+    }
+
+    public String getBarangayCode() {
+        return barangayCode;
+    }
+
+    public void setBarangayCode(String barangayCode) {
+        this.barangayCode = barangayCode;
+    }
+
+    public String getBarangayName() {
+        return barangayName;
+    }
+
+    public void setBarangayName(String barangayName) {
+        this.barangayName = barangayName;
+    }
+
+    public String getCityCode() {
+        return cityCode;
+    }
+
+    public void setCityCode(String cityCode) {
+        this.cityCode = cityCode;
+    }
+
+    public String getCityName() {
+        return cityName;
+    }
+
+    public void setCityName(String cityName) {
+        this.cityName = cityName;
+    }
+
+    public String getProvinceCode() {
+        return provinceCode;
+    }
+
+    public void setProvinceCode(String provinceCode) {
+        this.provinceCode = provinceCode;
+    }
+
+    public String getProvinceName() {
+        return provinceName;
+    }
+
+    public void setProvinceName(String provinceName) {
+        this.provinceName = provinceName;
+    }
+
+    public Long getCreatedByUserId() {
+        return createdByUserId;
+    }
+
+    public void setCreatedByUserId(Long createdByUserId) {
+        this.createdByUserId = createdByUserId;
+    }
+
+    public String getCreatedByRole() {
+        return createdByRole;
+    }
+
+    public void setCreatedByRole(String createdByRole) {
+        this.createdByRole = createdByRole;
     }
 }

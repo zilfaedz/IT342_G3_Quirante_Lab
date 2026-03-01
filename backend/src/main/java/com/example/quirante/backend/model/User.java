@@ -43,7 +43,51 @@ public class User {
     private String additionalDocumentsMessage;
 
     private String purok;
-    private boolean directoryOptIn = false;
+    @Column(nullable = true)
+    private Boolean directoryOptIn = false;
+
+    @Column(nullable = false)
+    private String profileVisibility = "OFFICIALS"; // DEFAULT: OFFICIALS, RESIDENTS, PRIVATE
+
+    // New Fields
+    private String dateOfBirth;
+    private String gender;
+    private String emergencyContactName;
+    private String emergencyContactRelationship;
+    private String emergencyContactPhone;
+    private String bloodType;
+    private String validIdUrl;
+    @Column(nullable = true)
+    private String bio = "";
+    @Column(nullable = true)
+    private String householdRole = "";
+    @Column(nullable = true)
+    private String householdSize = "1";
+    @Column(nullable = true)
+    private String numberOfChildren = "0";
+    @Column(name = "has_senior_citizen", nullable = true)
+    private String seniorCitizenPresent = "No";
+    @Column(name = "haspwd", nullable = true)
+    private String pwdPresent = "No";
+    @Column(nullable = true)
+    private String pets = "No";
+    @Column(nullable = true)
+    private String medicalConditions = "";
+    @Column(nullable = true)
+    private String additionalNotes = "";
+    @Column(nullable = true)
+    private String profilePictureUrl = "";
+    @Column(name = "is_onboarded", nullable = true)
+    private Boolean onboardingCompleted = false;
+
+    @Column(name = "onboarding_completed", nullable = true)
+    private Boolean onboardingCompletedLegacy = false;
+
+    @Column(name = "pwd_present", nullable = true)
+    private String pwdPresentLegacy;
+
+    @Column(name = "senior_citizen_present", nullable = true)
+    private String seniorCitizenPresentLegacy;
 
     @Transient
     private String captainName;
@@ -240,11 +284,11 @@ public class User {
         this.purok = purok;
     }
 
-    public boolean isDirectoryOptIn() {
+    public Boolean isDirectoryOptIn() {
         return directoryOptIn;
     }
 
-    public void setDirectoryOptIn(boolean directoryOptIn) {
+    public void setDirectoryOptIn(Boolean directoryOptIn) {
         this.directoryOptIn = directoryOptIn;
     }
 
@@ -254,6 +298,158 @@ public class User {
 
     public void setCaptainName(String captainName) {
         this.captainName = captainName;
+    }
+
+    public String getDateOfBirth() {
+        return dateOfBirth;
+    }
+
+    public void setDateOfBirth(String dateOfBirth) {
+        this.dateOfBirth = dateOfBirth;
+    }
+
+    public String getGender() {
+        return gender;
+    }
+
+    public void setGender(String gender) {
+        this.gender = gender;
+    }
+
+    public String getEmergencyContactName() {
+        return emergencyContactName;
+    }
+
+    public void setEmergencyContactName(String emergencyContactName) {
+        this.emergencyContactName = emergencyContactName;
+    }
+
+    public String getEmergencyContactRelationship() {
+        return emergencyContactRelationship;
+    }
+
+    public void setEmergencyContactRelationship(String emergencyContactRelationship) {
+        this.emergencyContactRelationship = emergencyContactRelationship;
+    }
+
+    public String getEmergencyContactPhone() {
+        return emergencyContactPhone;
+    }
+
+    public void setEmergencyContactPhone(String emergencyContactPhone) {
+        this.emergencyContactPhone = emergencyContactPhone;
+    }
+
+    public String getBloodType() {
+        return bloodType;
+    }
+
+    public void setBloodType(String bloodType) {
+        this.bloodType = bloodType;
+    }
+
+    public String getValidIdUrl() {
+        return validIdUrl;
+    }
+
+    public void setValidIdUrl(String validIdUrl) {
+        this.validIdUrl = validIdUrl;
+    }
+
+    public String getBio() {
+        return bio;
+    }
+
+    public void setBio(String bio) {
+        this.bio = bio;
+    }
+
+    public String getHouseholdRole() {
+        return householdRole;
+    }
+
+    public void setHouseholdRole(String householdRole) {
+        this.householdRole = householdRole;
+    }
+
+    public String getHouseholdSize() {
+        return householdSize;
+    }
+
+    public void setHouseholdSize(String householdSize) {
+        this.householdSize = householdSize;
+    }
+
+    public String getNumberOfChildren() {
+        return numberOfChildren;
+    }
+
+    public void setNumberOfChildren(String numberOfChildren) {
+        this.numberOfChildren = numberOfChildren;
+    }
+
+    public String getSeniorCitizenPresent() {
+        return seniorCitizenPresent;
+    }
+
+    public void setSeniorCitizenPresent(String seniorCitizenPresent) {
+        this.seniorCitizenPresent = seniorCitizenPresent;
+    }
+
+    public String getPwdPresent() {
+        return pwdPresent;
+    }
+
+    public void setPwdPresent(String pwdPresent) {
+        this.pwdPresent = pwdPresent;
+    }
+
+    public String getPets() {
+        return pets;
+    }
+
+    public void setPets(String pets) {
+        this.pets = pets;
+    }
+
+    public String getMedicalConditions() {
+        return medicalConditions;
+    }
+
+    public void setMedicalConditions(String medicalConditions) {
+        this.medicalConditions = medicalConditions;
+    }
+
+    public String getAdditionalNotes() {
+        return additionalNotes;
+    }
+
+    public void setAdditionalNotes(String additionalNotes) {
+        this.additionalNotes = additionalNotes;
+    }
+
+    public String getProfilePictureUrl() {
+        return profilePictureUrl;
+    }
+
+    public void setProfilePictureUrl(String profilePictureUrl) {
+        this.profilePictureUrl = profilePictureUrl;
+    }
+
+    public Boolean isOnboardingCompleted() {
+        return onboardingCompleted;
+    }
+
+    public void setOnboardingCompleted(Boolean onboardingCompleted) {
+        this.onboardingCompleted = onboardingCompleted;
+    }
+
+    public String getProfileVisibility() {
+        return profileVisibility;
+    }
+
+    public void setProfileVisibility(String profileVisibility) {
+        this.profileVisibility = profileVisibility;
     }
 
     @PrePersist

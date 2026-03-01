@@ -39,6 +39,11 @@ export default function RegisterBarangay() {
         regionCode: "",
         street: "",
         lotBlockNumber: "",
+        gender: "",
+        emergencyContactName: "",
+        emergencyContactRelationship: "",
+        emergencyContactPhone: "",
+        bloodType: "",
         agree: false,
     });
     const [files, setFiles] = useState({
@@ -138,6 +143,11 @@ export default function RegisterBarangay() {
             formData.append('password', form.password);
             formData.append('dateOfBirth', form.dateOfBirth);
             formData.append('phone', form.phone);
+            formData.append('gender', form.gender);
+            formData.append('emergencyContactName', form.emergencyContactName);
+            formData.append('emergencyContactRelationship', form.emergencyContactRelationship);
+            formData.append('emergencyContactPhone', form.emergencyContactPhone);
+            formData.append('bloodType', form.bloodType);
 
             formData.append('barangayCode', form.barangayCode);
             formData.append('barangay', form.barangay);
@@ -385,6 +395,87 @@ export default function RegisterBarangay() {
                                             value={form.confirmPassword}
                                             onChange={(e) => update("confirmPassword", e.target.value)}
                                         />
+                                    </div>
+                                </div>
+
+                                <div className="auth-field-row">
+                                    <div className="auth-field-group">
+                                        <label className="auth-label">Gender</label>
+                                        <div className="auth-input-wrap">
+                                            <select
+                                                className="auth-input"
+                                                value={form.gender}
+                                                onChange={(e) => update("gender", e.target.value)}
+                                            >
+                                                <option value="">Select Gender</option>
+                                                <option value="Male">Male</option>
+                                                <option value="Female">Female</option>
+                                                <option value="Other">Other / Prefer not to say</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div className="auth-field-group">
+                                        <label className="auth-label">Blood Type (Optional)</label>
+                                        <div className="auth-input-wrap">
+                                            <select
+                                                className="auth-input"
+                                                value={form.bloodType}
+                                                onChange={(e) => update("bloodType", e.target.value)}
+                                            >
+                                                <option value="">Unknown</option>
+                                                <option value="A+">A+</option>
+                                                <option value="A-">A-</option>
+                                                <option value="B+">B+</option>
+                                                <option value="B-">B-</option>
+                                                <option value="O+">O+</option>
+                                                <option value="O-">O-</option>
+                                                <option value="AB+">AB+</option>
+                                                <option value="AB-">AB-</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="auth-eyebrow" style={{ marginTop: '20px', marginBottom: '10px' }}>Emergency Contact</div>
+                                <div className="auth-field-group">
+                                    <label className="auth-label">Emergency Contact Name</label>
+                                    <div className="auth-input-wrap">
+                                        <span className="auth-input-icon"><User size={16} /></span>
+                                        <input
+                                            type="text"
+                                            className="auth-input"
+                                            placeholder="Full Name"
+                                            value={form.emergencyContactName}
+                                            onChange={(e) => update("emergencyContactName", e.target.value)}
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="auth-field-row">
+                                    <div className="auth-field-group">
+                                        <label className="auth-label">Relationship</label>
+                                        <div className="auth-input-wrap">
+                                            <input
+                                                type="text"
+                                                className="auth-input"
+                                                placeholder="e.g. Spouse"
+                                                value={form.emergencyContactRelationship}
+                                                onChange={(e) => update("emergencyContactRelationship", e.target.value)}
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="auth-field-group">
+                                        <label className="auth-label">Phone Number</label>
+                                        <div className="auth-input-wrap">
+                                            <span className="auth-input-icon"><Smartphone size={16} /></span>
+                                            <input
+                                                type="tel"
+                                                className="auth-input"
+                                                placeholder="Contact Number"
+                                                value={form.emergencyContactPhone}
+                                                onChange={(e) => update("emergencyContactPhone", e.target.value)}
+                                            />
+                                        </div>
                                     </div>
                                 </div>
                             </div>

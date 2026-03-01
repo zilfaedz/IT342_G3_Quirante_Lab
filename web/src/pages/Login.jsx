@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { Lock, Radio, Mail, Eye, EyeOff, ArrowRight } from "lucide-react";
+import AlertBanner from "../components/AlertBanner";
 import logo from "../assets/ReadyBarangay_Logo.png";
 import "./Login.css";
 
@@ -22,7 +23,7 @@ export default function LoginPage() {
       const result = await login(form.email, form.password, true);
       if (result.success) {
         if (result.user?.role === 'Super Admin') {
-          navigate("/admin/verifications");
+          navigate("/admin/verifications?tab=overview");
         } else {
           navigate("/dashboard");
         }
@@ -38,6 +39,8 @@ export default function LoginPage() {
 
   return (
     <div className="auth-page">
+      <AlertBanner message={error} onClose={() => setError("")} />
+
       {/* Background decorations */}
       <div className="auth-orb auth-orb-1" />
       <div className="auth-orb auth-orb-2" />
@@ -104,12 +107,9 @@ export default function LoginPage() {
               </div>
               <h2 className="auth-card-title">Log In</h2>
               <p className="auth-card-sub">Access your ReadyBarangay account</p>
-              {error && <div className="auth-error-message" style={{ color: 'var(--color-3)', fontSize: '12px', textAlign: 'center', marginBottom: '10px' }}>{error}</div>}
             </div>
 
             <form onSubmit={handleSubmit} className="auth-form">
-
-
               <div className="auth-field-group">
                 <label className="auth-label" htmlFor="email">Email Address</label>
                 <div className="auth-input-wrap">

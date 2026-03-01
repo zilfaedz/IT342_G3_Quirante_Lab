@@ -114,9 +114,10 @@ public class ReportController {
         // If OFFICIAL/CAPTAIN/RESPONDER, return all reports in their barangay; if
         // RESIDENT, return only theirs
         String role = currentUser.getRole();
-        if ("OFFICIAL".equals(role) || "Barangay Captain".equals(role) || "RESPONDER".equals(role)) {
+        if ("OFFICIAL".equals(role) || "Barangay Captain".equals(role) || "RESPONDER".equals(role)
+                || "Super Admin".equals(role)) {
             String userBarangayCode = currentUser.getBarangayCode();
-            if (userBarangayCode != null && !userBarangayCode.isEmpty()) {
+            if (!"Super Admin".equals(role) && userBarangayCode != null && !userBarangayCode.isEmpty()) {
                 reports = reportRepository.findByUserBarangayCodeOrderByCreatedAtDesc(userBarangayCode);
             } else {
                 reports = reportRepository.findAllByOrderByCreatedAtDesc(); // Fallback if no barangay code

@@ -4,15 +4,17 @@ import { useAuth } from "../context/AuthContext";
 import {
     CheckCircle2, ArrowRight, ArrowLeft, Check, Lock,
     Mail, Smartphone, User, Eye, EyeOff, Building,
-    MapPin, Building2, Radio
+    MapPin, Building2, Radio, Calendar, IdCard
 } from "lucide-react";
+import AlertBanner from "../components/AlertBanner";
 import logo from "../assets/ReadyBarangay_Logo.png";
 import "./Register.css";
 import PhilippineLocationSelector from "../components/PhilippineLocationSelector";
 
 const steps = [
     { num: 1, label: "Your Details" },
-    { num: 2, label: "Barangay Info" },
+    { num: 2, label: "Identity & Emergency" },
+    { num: 3, label: "Barangay Info" },
 ];
 
 export default function RegisterPage() {
@@ -38,6 +40,9 @@ export default function RegisterPage() {
         street: "",
         lotBlockNumber: "",
         phone: "",
+        dateOfBirth: "",
+        gender: "",
+        validId: null,
         agree: false,
     });
     const [showPass, setShowPass] = useState(false);
@@ -47,7 +52,43 @@ export default function RegisterPage() {
 
     const update = (key, val) => setForm((f) => ({ ...f, [key]: val }));
 
-    const handleNext = () => setStep((s) => Math.min(s + 1, 2));
+    const isValidEmail = (email) => {
+        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    };
+
+    const isStep1Complete = () => {
+        return (
+            form.firstName &&
+            form.lastName &&
+            isValidEmail(form.email) &&
+            form.phone &&
+            form.password &&
+            form.password.length >= 6 &&
+            form.confirmPassword === form.password
+        );
+    };
+
+    const isStep2Complete = () => {
+        return (
+            form.dateOfBirth &&
+            form.gender &&
+            form.validId
+        );
+    };
+
+    const isStep3Complete = () => {
+        return (
+            form.barangayCode &&
+            form.street &&
+            form.agree
+        );
+    };
+
+    const handleNext = () => {
+        if (step === 1 && !isStep1Complete()) return;
+        if (step === 2 && !isStep2Complete()) return;
+        setStep((s) => Math.min(s + 1, 3));
+    };
     const handleBack = () => setStep((s) => Math.max(s - 1, 1));
 
     const handleSubmit = async (e) => {
@@ -60,31 +101,30 @@ export default function RegisterPage() {
         setError("");
 
         try {
-            // Create a display-friendly address string
-            const fullAddress = `${form.street || ""}, ${form.barangay}, ${form.cityName}, ${form.provinceName}`;
+            // Prepare data for backend using FormData for file support
+            const formData = new FormData();
+            formData.append('firstName', form.firstName);
+            formData.append('lastName', form.lastName);
+            formData.append('email', form.email);
+            formData.append('password', form.password);
+            formData.append('phone', form.phone);
+            formData.append('dateOfBirth', form.dateOfBirth);
+            formData.append('gender', form.gender);
+            formData.append('barangayCode', form.barangayCode);
+            formData.append('barangay', form.barangay);
+            formData.append('cityName', form.cityName);
+            formData.append('cityCode', form.cityCode);
+            formData.append('provinceName', form.provinceName);
+            formData.append('provinceCode', form.provinceCode);
+            formData.append('regionName', form.regionName);
+            formData.append('regionCode', form.regionCode);
+            formData.append('street', form.street);
+            formData.append('lotBlockNumber', form.lotBlockNumber);
+            if (form.validId) {
+                formData.append('validId', form.validId);
+            }
 
-            // Prepare data for backend (matching Node backend schema)
-            const registrationData = {
-                firstName: form.firstName,
-                lastName: form.lastName,
-                fullName: `${form.firstName} ${form.lastName}`.trim(),
-                email: form.email,
-                password: form.password,
-                role: 'Resident', // Default for this page
-                barangayCode: form.barangayCode,
-                barangay: form.barangay,
-                cityName: form.cityName,
-                cityCode: form.cityCode,
-                provinceName: form.provinceName,
-                provinceCode: form.provinceCode,
-                regionName: form.regionName,
-                regionCode: form.regionCode,
-                street: form.street,
-                lotBlockNumber: form.lotBlockNumber,
-                contactNumber: form.phone
-            };
-
-            const result = await register(registrationData);
+            const result = await register(formData);
 
             if (result.success) {
                 setSubmitted(true);
@@ -133,6 +173,7 @@ export default function RegisterPage() {
 
     return (
         <div className="auth-page reg-page">
+            <AlertBanner message={error} onClose={() => setError("")} />
             <div className="auth-orb auth-orb-1" />
             <div className="auth-orb auth-orb-2" />
             <div className="auth-ring auth-ring-1" />
@@ -213,7 +254,6 @@ export default function RegisterPage() {
                                 {step === 1 && "Tell us about yourself"}
                                 {step === 2 && "Which barangay do you belong to?"}
                             </p>
-                            {error && <div className="auth-error-message" style={{ color: 'var(--color-3)', fontSize: '12px', textAlign: 'center', marginTop: '10px' }}>{error}</div>}
                         </div>
 
                         {/* Step 1 — Details */}
@@ -260,6 +300,11 @@ export default function RegisterPage() {
                                             onChange={(e) => update("email", e.target.value)}
                                         />
                                     </div>
+                                    {form.email && !isValidEmail(form.email) && (
+                                        <div style={{ color: 'var(--color-3)', fontSize: '10px', marginTop: '4px' }}>
+                                            Please enter a valid email address
+                                        </div>
+                                    )}
                                 </div>
 
                                 <div className="auth-field-group">
@@ -295,6 +340,11 @@ export default function RegisterPage() {
                                             {showPass ? <EyeOff size={16} /> : <Eye size={16} />}
                                         </button>
                                     </div>
+                                    {form.password && form.password.length < 6 && (
+                                        <div style={{ color: 'var(--color-3)', fontSize: '10px', marginTop: '4px' }}>
+                                            Password should be at least 6 letters
+                                        </div>
+                                    )}
                                 </div>
 
                                 <div className="auth-field-group">
@@ -313,10 +363,61 @@ export default function RegisterPage() {
                             </div>
                         )}
 
-                        {/* Step 2 — Barangay & Address */}
+                        {/* Step 2 — Identity & Emergency */}
                         {step === 2 && (
+                            <div className="auth-form">
+                                <div className="auth-field-row">
+                                    <div className="auth-field-group">
+                                        <label className="auth-label">Date of Birth</label>
+                                        <div className="auth-input-wrap">
+                                            <span className="auth-input-icon"><Calendar size={16} /></span>
+                                            <input
+                                                type="date"
+                                                className="auth-input"
+                                                value={form.dateOfBirth}
+                                                onChange={(e) => update("dateOfBirth", e.target.value)}
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="auth-field-group">
+                                        <label className="auth-label">Gender</label>
+                                        <div className="auth-input-wrap">
+                                            <span className="auth-input-icon"><User size={16} /></span>
+                                            <select
+                                                className="auth-input"
+                                                value={form.gender}
+                                                onChange={(e) => update("gender", e.target.value)}
+                                            >
+                                                <option value="">Select Gender</option>
+                                                <option value="Male">Male</option>
+                                                <option value="Female">Female</option>
+                                                <option value="Other">Other / Prefer not to say</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="auth-divider" />
+
+                                <div className="auth-field-group" style={{ marginTop: '0px' }}>
+                                    <label className="auth-label" style={{ marginTop: '4px' }}>Upload Valid ID (Image/PDF)</label>
+                                    <div className="auth-input-wrap">
+                                        <span className="auth-input-icon"><IdCard size={16} /></span>
+                                        <input
+                                            type="file"
+                                            className="auth-input"
+                                            accept="image/*,.pdf"
+                                            onChange={(e) => update("validId", e.target.files[0])}
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Step 3 — Barangay & Address */}
+                        {step === 3 && (
                             <form onSubmit={handleSubmit} className="auth-form">
-                                <div style={{ marginBottom: 20 }}>
+                                <div style={{ marginBottom: 0 }}>
                                     <PhilippineLocationSelector
                                         onLocationChange={(loc) => {
                                             setForm(f => ({
@@ -334,9 +435,11 @@ export default function RegisterPage() {
                                     />
                                 </div>
 
-                                <div className="reg-name-row">
+                                <div className="auth-divider" />
+
+                                <div className="reg-name-row" style={{ marginTop: '0px' }}>
                                     <div className="auth-field-group">
-                                        <label className="auth-label">Street / Village / Area</label>
+                                        <label className="auth-label" style={{ marginTop: '4px' }}>Street / Village / Area</label>
                                         <div className="auth-input-wrap">
                                             <span className="auth-input-icon"><MapPin size={16} /></span>
                                             <input
@@ -349,7 +452,7 @@ export default function RegisterPage() {
                                         </div>
                                     </div>
                                     <div className="auth-field-group">
-                                        <label className="auth-label">Lot / Block / Apt / Suite</label>
+                                        <label className="auth-label" style={{ marginTop: '4px' }}>Lot / Block / Apt / Suite</label>
                                         <div className="auth-input-wrap">
                                             <span className="auth-input-icon"><Building size={16} /></span>
                                             <input
@@ -386,7 +489,7 @@ export default function RegisterPage() {
                                         type="submit"
                                         className="auth-submit-btn"
                                         style={{ margin: 0 }}
-                                        disabled={!form.agree || !form.barangayCode || loading}
+                                        disabled={!isStep3Complete() || loading}
                                     >
                                         {loading ? "Creating..." : "Create My Account"} <ArrowRight size={18} style={{ marginLeft: 8 }} />
                                     </button>
@@ -395,7 +498,7 @@ export default function RegisterPage() {
                         )}
 
                         {/* Nav buttons */}
-                        {step < 2 && (
+                        {step < 3 && (
                             <div className="reg-btn-row">
                                 {step > 1 && (
                                     <button onClick={handleBack} className="reg-back-btn">
@@ -405,6 +508,10 @@ export default function RegisterPage() {
                                 <button
                                     onClick={handleNext}
                                     className="auth-submit-btn reg-next-btn"
+                                    disabled={
+                                        (step === 1 && !isStep1Complete()) ||
+                                        (step === 2 && !isStep2Complete())
+                                    }
                                 >
                                     Continue <ArrowRight size={18} style={{ marginLeft: 8 }} />
                                 </button>
@@ -421,6 +528,6 @@ export default function RegisterPage() {
                 </div>
 
             </div>
-        </div>
+        </div >
     );
 }

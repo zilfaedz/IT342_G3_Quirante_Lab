@@ -60,7 +60,11 @@ export const AuthProvider = ({ children }) => {
 
   const register = async (registrationData) => {
     try {
-      await api.post('/auth/register', registrationData);
+      await api.post('/auth/register', registrationData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
       return { success: true };
     } catch (error) {
       return { success: false, message: error.response?.data?.message || 'Registration failed' };

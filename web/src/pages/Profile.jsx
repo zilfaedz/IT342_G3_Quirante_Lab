@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
     LayoutDashboard, AlertTriangle, Megaphone, Map, ShieldAlert,
@@ -10,7 +10,7 @@ import {
 import "./DashboardLayout.css";
 import "./Profile.css";
 import { useAuth } from "../context/AuthContext";
-import { updateProfile } from "../services/api";
+import { getBarangayStats, updateProfile, uploadProfilePicture } from "../services/api";
 import PhilippineLocationSelector from "../components/PhilippineLocationSelector";
 
 const navItems = [
@@ -61,6 +61,14 @@ export default function ProfilePage() {
     const [activeTab, setActiveTab] = useState("Overview");
     const [editMode, setEditMode] = useState(false);
     const [saved, setSaved] = useState(false);
+    const [avatarUploading, setAvatarUploading] = useState(false);
+    const [barangayStats, setBarangayStats] = useState({
+        totalResidents: 0,
+        officialsRegistered: 0,
+        evacuationCenters: 0,
+        totalIncidentsLogged: 0,
+    });
+    const fileInputRef = useRef(null);
 
     const [form, setForm] = useState({
         firstName: user?.firstName || "",
@@ -78,6 +86,7 @@ export default function ProfilePage() {
         provinceCode: user?.provinceCode || "",
         address: user?.address || "",
         bio: user?.bio || "Serving the community.",
+        profileVisibility: user?.profileVisibility || "OFFICIALS",
     });
 
     const [notifs, setNotifs] = useState({
@@ -88,6 +97,14 @@ export default function ProfilePage() {
         systemUpdates: false,
         emailDigest: true,
     });
+
+    const initials = `${user?.firstName?.[0] || ""}${user?.lastName?.[0] || ""}`.trim()
+        || user?.email?.[0]?.toUpperCase()
+        || "U";
+
+    const profileImageUrl = user?.profilePictureUrl
+        ? (user.profilePictureUrl.startsWith("http") ? user.profilePictureUrl : `http://localhost:8080${user.profilePictureUrl}`)
+        : null;
 
     const handleSave = async () => {
         try {
@@ -118,6 +135,50 @@ export default function ProfilePage() {
         }));
     };
 
+    const fetchStats = useCallback(async () => {
+        try {
+            const response = await getBarangayStats();
+            setBarangayStats({
+                totalResidents: response.data?.totalResidents || 0,
+                officialsRegistered: response.data?.officialsRegistered || 0,
+                evacuationCenters: response.data?.evacuationCenters || 0,
+                totalIncidentsLogged: response.data?.totalIncidentsLogged || 0,
+            });
+        } catch (error) {
+            console.error("Failed to fetch barangay stats", error);
+        }
+    }, []);
+
+    useEffect(() => {
+        if (activeTab !== "Barangay Info") return;
+
+        fetchStats();
+        const intervalId = setInterval(fetchStats, 10000);
+        return () => clearInterval(intervalId);
+    }, [activeTab, fetchStats]);
+
+    const handleAvatarButtonClick = () => {
+        fileInputRef.current?.click();
+    };
+
+    const handleAvatarChange = async (event) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        setAvatarUploading(true);
+        try {
+            const response = await uploadProfilePicture(file);
+            const newUrl = response.data?.profilePictureUrl || response.data?.user?.profilePictureUrl || "";
+            updateUser({ profilePictureUrl: newUrl });
+        } catch (error) {
+            console.error("Failed to upload profile picture", error);
+            alert("Failed to upload profile picture. Please try again.");
+        } finally {
+            setAvatarUploading(false);
+            event.target.value = "";
+        }
+    };
+
     return (
         <div className="profile-container" style={{ width: '100%', maxWidth: '1000px', margin: '0 auto' }}>
             {/* Topbar */}
@@ -131,7 +192,7 @@ export default function ProfilePage() {
                         <Bell size={20} />
                         <span className="topbar-notif-dot" />
                     </button>
-                    <div className="topbar-avatar">JD</div>
+                    <div className="topbar-avatar">{initials}</div>
                 </div>
             </div>
 
@@ -144,8 +205,28 @@ export default function ProfilePage() {
 
                     <div className="profile-hero-left">
                         <div className="profile-avatar-wrap">
-                            <div className="profile-avatar">JD</div>
-                            <button className="profile-avatar-edit"><Camera size={16} /></button>
+                            <div className="profile-avatar">
+                                {profileImageUrl ? (
+                                    <img src={profileImageUrl} alt="Profile" className="profile-avatar-img" />
+                                ) : (
+                                    initials
+                                )}
+                            </div>
+                            <button
+                                className="profile-avatar-edit"
+                                onClick={handleAvatarButtonClick}
+                                disabled={avatarUploading}
+                                title={avatarUploading ? "Uploading..." : "Change profile picture"}
+                            >
+                                <Camera size={16} />
+                            </button>
+                            <input
+                                ref={fileInputRef}
+                                type="file"
+                                accept="image/*"
+                                hidden
+                                onChange={handleAvatarChange}
+                            />
                         </div>
                         <div className="profile-hero-info">
                             <div className="profile-role-chip">
@@ -258,6 +339,30 @@ export default function ProfilePage() {
                                     </div>
 
                                     <div className="profile-field">
+                                        <label className="profile-field-label">Directory Visibility</label>
+                                        {editMode ? (
+                                            <select
+                                                className="profile-input"
+                                                value={form.profileVisibility}
+                                                onChange={(e) => update("profileVisibility", e.target.value)}
+                                            >
+                                                <option value="PRIVATE">Private (Searchable by no one)</option>
+                                                <option value="OFFICIALS">Officials Only (Searchable by Barangay Officials)</option>
+                                                <option value="RESIDENTS">All Residents (Searchable by Neighbors)</option>
+                                            </select>
+                                        ) : (
+                                            <div className="profile-field-value">
+                                                {form.profileVisibility === "PRIVATE" && "Private"}
+                                                {form.profileVisibility === "OFFICIALS" && "Officials Only"}
+                                                {form.profileVisibility === "RESIDENTS" && "All Residents"}
+                                            </div>
+                                        )}
+                                        <p style={{ fontSize: '11px', color: 'var(--text-light)', marginTop: '4px' }}>
+                                            Controls who can see you in the Community Directory.
+                                        </p>
+                                    </div>
+
+                                    <div className="profile-field">
                                         <label className="profile-field-label">Bio</label>
                                         {editMode ? (
                                             <textarea
@@ -362,6 +467,24 @@ export default function ProfilePage() {
 
                             </div>
                         </div>
+
+                        <div className="profile-danger-zone">
+                            <div className="profile-danger-title"><AlertTriangle size={18} style={{ marginRight: 8 }} /> Danger Zone</div>
+                            <div className="profile-danger-row">
+                                <div>
+                                    <div className="profile-danger-action-label">Deactivate Account</div>
+                                    <div className="profile-danger-action-sub">Temporarily disable your ReadyBarangay account.</div>
+                                </div>
+                                <button className="profile-danger-btn outline">Deactivate</button>
+                            </div>
+                            <div className="profile-danger-row">
+                                <div>
+                                    <div className="profile-danger-action-label">Log Out of All Devices</div>
+                                    <div className="profile-danger-action-sub">Sign out from all active sessions immediately.</div>
+                                </div>
+                                <button className="profile-danger-btn solid">Log Out All</button>
+                            </div>
+                        </div>
                     </div>
                 )}
 
@@ -372,7 +495,7 @@ export default function ProfilePage() {
                             <div className="profile-card-header">
                                 <div className="profile-card-title"><Bell size={18} style={{ marginRight: 8 }} /> Notification Preferences</div>
                             </div>
-                            <div className="profile-fields profile-fields-max">
+                            <div className="profile-fields profile-fields-max profile-fields-brgy">
                                 <p className="profile-notif-desc">
                                     Choose which notifications you'd like to receive. Emergency alerts are always on.
                                 </p>
@@ -465,14 +588,14 @@ export default function ProfilePage() {
 
                                 <div className="profile-brgy-stats">
                                     {[
-                                        { icon: <Users size={18} />, label: "Total Residents", value: "1,284" },
-                                        { icon: <ShieldAlert size={18} />, label: "Officials Registered", value: "14" },
-                                        { icon: <Hospital size={18} />, label: "Evacuation Centers", value: "3" },
-                                        { icon: <ClipboardList size={18} />, label: "Total Incidents Logged", value: "47" },
+                                        { icon: <Users size={18} />, label: "Total Residents", value: barangayStats.totalResidents },
+                                        { icon: <ShieldAlert size={18} />, label: "Officials Registered", value: barangayStats.officialsRegistered },
+                                        { icon: <Hospital size={18} />, label: "Evacuation Centers", value: barangayStats.evacuationCenters },
+                                        { icon: <ClipboardList size={18} />, label: "Total Incidents Logged", value: barangayStats.totalIncidentsLogged },
                                     ].map((s, i) => (
                                         <div key={i} className="profile-brgy-stat">
                                             <div className="profile-brgy-stat-icon">{s.icon}</div>
-                                            <div className="profile-brgy-stat-value">{s.value}</div>
+                                            <div className="profile-brgy-stat-value">{Number(s.value || 0).toLocaleString()}</div>
                                             <div className="profile-brgy-stat-label">{s.label}</div>
                                         </div>
                                     ))}
@@ -481,25 +604,6 @@ export default function ProfilePage() {
                         </div>
                     </div>
                 )}
-
-                {/* Danger zone */}
-                <div className="profile-danger-zone">
-                    <div className="profile-danger-title"><AlertTriangle size={18} style={{ marginRight: 8 }} /> Danger Zone</div>
-                    <div className="profile-danger-row">
-                        <div>
-                            <div className="profile-danger-action-label">Deactivate Account</div>
-                            <div className="profile-danger-action-sub">Temporarily disable your ReadyBarangay account.</div>
-                        </div>
-                        <button className="profile-danger-btn outline">Deactivate</button>
-                    </div>
-                    <div className="profile-danger-row">
-                        <div>
-                            <div className="profile-danger-action-label">Log Out of All Devices</div>
-                            <div className="profile-danger-action-sub">Sign out from all active sessions immediately.</div>
-                        </div>
-                        <button className="profile-danger-btn solid">Log Out All</button>
-                    </div>
-                </div>
 
             </div>
         </div>

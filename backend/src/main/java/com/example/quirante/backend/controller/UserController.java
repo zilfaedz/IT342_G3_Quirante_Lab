@@ -1,20 +1,34 @@
 package com.example.quirante.backend.controller;
 
 import com.example.quirante.backend.model.User;
+import com.example.quirante.backend.repository.EmergencyReportRepository;
+import com.example.quirante.backend.repository.EvacuationCenterRepository;
 import com.example.quirante.backend.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/user")
@@ -23,6 +37,12 @@ public class UserController {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private EvacuationCenterRepository evacuationCenterRepository;
+
+    @Autowired
+    private EmergencyReportRepository emergencyReportRepository;
 
     @GetMapping("/me")
     public User getCurrentUser() {
@@ -81,6 +101,36 @@ public class UserController {
             currentUser.setStreet(updates.get("street"));
         if (updates.containsKey("lotBlockNumber"))
             currentUser.setLotBlockNumber(updates.get("lotBlockNumber"));
+        if (updates.containsKey("profileVisibility"))
+            currentUser.setProfileVisibility(updates.get("profileVisibility"));
+        
+        // Onboarding and profile fields
+        if (updates.containsKey("bio"))
+            currentUser.setBio(updates.get("bio"));
+        if (updates.containsKey("householdRole"))
+            currentUser.setHouseholdRole(updates.get("householdRole"));
+        if (updates.containsKey("householdSize"))
+            currentUser.setHouseholdSize(updates.get("householdSize"));
+        if (updates.containsKey("numberOfChildren"))
+            currentUser.setNumberOfChildren(updates.get("numberOfChildren"));
+        if (updates.containsKey("seniorCitizenPresent"))
+            currentUser.setSeniorCitizenPresent(updates.get("seniorCitizenPresent"));
+        if (updates.containsKey("pwdPresent"))
+            currentUser.setPwdPresent(updates.get("pwdPresent"));
+        if (updates.containsKey("pets"))
+            currentUser.setPets(updates.get("pets"));
+        if (updates.containsKey("emergencyContactName"))
+            currentUser.setEmergencyContactName(updates.get("emergencyContactName"));
+        if (updates.containsKey("emergencyContactRelationship"))
+            currentUser.setEmergencyContactRelationship(updates.get("emergencyContactRelationship"));
+        if (updates.containsKey("emergencyContactPhone"))
+            currentUser.setEmergencyContactPhone(updates.get("emergencyContactPhone"));
+        if (updates.containsKey("bloodType"))
+            currentUser.setBloodType(updates.get("bloodType"));
+        if (updates.containsKey("medicalConditions"))
+            currentUser.setMedicalConditions(updates.get("medicalConditions"));
+        if (updates.containsKey("additionalNotes"))
+            currentUser.setAdditionalNotes(updates.get("additionalNotes"));
 
         userRepository.save(currentUser);
 
@@ -95,7 +145,9 @@ public class UserController {
         User currentUser = userRepository.findByEmail(auth.getName()).orElse(null);
 
         if (currentUser == null
-                || (!"OFFICIAL".equals(currentUser.getRole()) && !"Barangay Captain".equals(currentUser.getRole()))) {
+                || (!"OFFICIAL".equals(currentUser.getRole())
+                        && !"Barangay Captain".equals(currentUser.getRole())
+                        && !"Super Admin".equals(currentUser.getRole()))) {
             return ResponseEntity.status(403).body(Map.of("message", "Access denied"));
         }
 
@@ -104,6 +156,72 @@ public class UserController {
         }
 
         return ResponseEntity.ok(userRepository.findAll());
+    }
+
+    @GetMapping("/barangay-stats")
+    public ResponseEntity<?> getBarangayStats() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        User currentUser = userRepository.findByEmail(auth.getName()).orElse(null);
+
+        if (currentUser == null) {
+            return ResponseEntity.status(404).body(Map.of("message", "User not found"));
+        }
+
+        String barangayCode = currentUser.getBarangayCode();
+        if (barangayCode == null || barangayCode.isBlank()) {
+            return ResponseEntity.ok(Map.of(
+                    "totalResidents", 0,
+                    "officialsRegistered", 0,
+                    "evacuationCenters", evacuationCenterRepository.count(),
+                    "totalIncidentsLogged", 0));
+        }
+
+        long totalResidents = userRepository.countByBarangayCodeAndRoleAndAccountStatus(barangayCode, "RESIDENT",
+                "APPROVED");
+        long officialsRegistered = userRepository.countByBarangayCodeAndRoleInAndAccountStatus(
+                barangayCode,
+                List.of("OFFICIAL", "Barangay Captain"),
+                "APPROVED");
+        long evacuationCenters = evacuationCenterRepository.count();
+        long totalIncidentsLogged = emergencyReportRepository.countByUserBarangayCode(barangayCode);
+
+        return ResponseEntity.ok(Map.of(
+                "totalResidents", totalResidents,
+                "officialsRegistered", officialsRegistered,
+                "evacuationCenters", evacuationCenters,
+                "totalIncidentsLogged", totalIncidentsLogged));
+    }
+
+    @PostMapping("/profile-picture")
+    public ResponseEntity<?> uploadProfilePicture(@RequestParam("profilePicture") MultipartFile profilePicture) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        User currentUser = userRepository.findByEmail(auth.getName()).orElse(null);
+
+        if (currentUser == null) {
+            return ResponseEntity.status(404).body(Map.of("message", "User not found"));
+        }
+
+        if (profilePicture == null || profilePicture.isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("message", "No profile picture file uploaded"));
+        }
+
+        try {
+            Path uploadPath = Paths.get("uploads/");
+            if (!Files.exists(uploadPath)) {
+                Files.createDirectories(uploadPath);
+            }
+
+            String uploadedPath = saveFile(profilePicture, uploadPath);
+            currentUser.setProfilePictureUrl(uploadedPath);
+            userRepository.save(currentUser);
+
+            return ResponseEntity.ok(Map.of(
+                    "message", "Profile picture updated successfully",
+                    "profilePictureUrl", uploadedPath,
+                    "user", currentUser));
+        } catch (IOException e) {
+            return ResponseEntity.internalServerError().body(Map.of("message", "Failed to upload profile picture"));
+        }
     }
 
     @org.springframework.web.bind.annotation.PostMapping("/transfer-captain")
@@ -170,5 +288,17 @@ public class UserController {
         return ResponseEntity.ok(Map.of(
                 "message", "User role updated successfully",
                 "user", targetUser));
+    }
+
+    private String saveFile(MultipartFile file, Path uploadPath) throws IOException {
+        String originalFileName = StringUtils.cleanPath(file.getOriginalFilename());
+        String fileExtension = "";
+        if (originalFileName.contains(".")) {
+            fileExtension = originalFileName.substring(originalFileName.lastIndexOf("."));
+        }
+        String newFileName = UUID.randomUUID() + fileExtension;
+        Path filePath = uploadPath.resolve(newFileName);
+        Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+        return "/uploads/" + newFileName;
     }
 }

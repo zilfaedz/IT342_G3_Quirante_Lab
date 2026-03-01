@@ -11,4 +11,6 @@ public interface EmergencyReportRepository extends JpaRepository<EmergencyReport
     List<EmergencyReport> findByUserIdOrderByCreatedAtDesc(Long userId);
 
     List<EmergencyReport> findByUserBarangayCodeOrderByCreatedAtDesc(String barangayCode);
+
+    long countByUserBarangayCode(String barangayCode);
 }

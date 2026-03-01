@@ -35,6 +35,9 @@
   --shadow-md: 0 4px 16px rgba(33, 33, 33, 0.12);
   --shadow-lg: 0 8px 32px rgba(33, 33, 33, 0.16);
   --sidebar-w: 260px;
+  --font-body: 'Inter', sans-serif;
+  --font-display: 'Montserrat', sans-serif;
+  --font-accent: 'Raleway', sans-serif;
 }
 
 
@@ -45,12 +48,24 @@
 }
 
 body {
-  font-family: 'Inter', sans-serif;
+  font-family: var(--font-body);
   background-color: var(--color-1);
   color: var(--text-dark);
   line-height: 1.6;
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
+}
+
+input,
+select,
+textarea,
+button,
+a,
+li,
+span,
+p,
+label {
+  font-family: var(--font-body);
 }
 
 h1,
@@ -61,7 +76,7 @@ h5,
 h6,
 .brand-headline,
 .auth-title {
-  font-family: 'Montserrat', sans-serif;
+  font-family: var(--font-display);
 }
 
 .brand-tagline,
@@ -70,7 +85,15 @@ h6,
 .auth-subtitle,
 .joy-body,
 .open-desc {
-  font-family: 'Raleway', sans-serif;
+  font-family: var(--font-accent);
+}
+
+.subtitle,
+.tagline,
+[class*="subtitle"],
+[class*="tagline"],
+[class*="greeting"] {
+  font-family: var(--font-accent);
 }
 
 /* Navbar */

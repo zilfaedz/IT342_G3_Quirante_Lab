@@ -6,7 +6,7 @@ import {
     Flame, Mountain, LifeBuoy, Zap, FileText, Camera, CheckCircle2,
     Building2, Megaphone, ClipboardList, Bell, Phone, Clock,
     Edit2, Trash2, Lock, Navigation, Search, X, ChevronRight,
-    ShieldCheck, Radio, Users, Map, Heart
+    ShieldCheck, Radio, Users, Map, Heart, Shield
 } from "lucide-react";
 import { MapContainer, TileLayer, Marker, useMapEvents } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
@@ -14,10 +14,13 @@ import L from "leaflet";
 import "./DashboardResident.css";
 import "../global.css";
 import LogoutModal from "../components/LogoutModal";
+import OnboardingModal from "../components/OnboardingModal";
+import Settings from "../components/Settings";
 import {
     submitReport,
     getReports,
     getDashboardData,
+    getScopedEvacuationCenters,
     getCommunityDirectory,
     toggleDirectoryOptIn,
     updateProfile,
@@ -38,7 +41,7 @@ const RESIDENT_NAV = [
     { icon: <AlertTriangle size={18} />, label: "Emergency Reports", id: "report" },
     { icon: <Building2 size={18} />, label: "Evacuation Centers", id: "evacuation" },
     { icon: <Bell size={18} />, label: "Announcements", id: "announcements" },
-    { icon: <Navigation size={18} />, label: "Profile", id: "profile" },
+    { icon: <Navigation size={18} />, label: "Settings", id: "settings" },
     { icon: <Lock size={18} />, label: "Logout", id: "logout" },
 ];
 
@@ -813,15 +816,17 @@ const EvacuationCenters = () => {
     const [centers, setCenters] = useState([]);
     const [userLoc, setUserLoc] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [scope, setScope] = useState("province");
 
     useEffect(() => {
         const fetchRemote = async () => {
+            setLoading(true);
             try {
-                const apiWrapper = await import('../services/api');
-                const data = await apiWrapper.getEvacuationCenters();
+                const data = await getScopedEvacuationCenters(scope);
                 setCenters(data);
             } catch (err) {
                 console.error("Failed to load centers", err);
+                setCenters([]);
             } finally {
                 setLoading(false);
             }
@@ -835,7 +840,13 @@ const EvacuationCenters = () => {
                 { enableHighAccuracy: true }
             );
         }
-    }, []);
+    }, [scope]);
+
+    const isAvailableCenter = (center) => {
+        const capacity = Number(center.capacity || 0);
+        const currentOccupancy = Number(center.currentOccupancy || 0);
+        return center.status !== "Closed" && capacity > 0 && currentOccupancy < capacity;
+    };
 
     const centersWithDist = centers.map(c => {
         let dist = Infinity;
@@ -843,18 +854,42 @@ const EvacuationCenters = () => {
             dist = getDistance(userLoc.lat, userLoc.lng, c.latitude, c.longitude);
         }
         return { ...c, distance: dist };
-    }).sort((a, b) => a.distance - b.distance);
+    }).sort((a, b) => {
+        const aRank = isAvailableCenter(a) ? 0 : 1;
+        const bRank = isAvailableCenter(b) ? 0 : 1;
+        if (aRank !== bRank) return aRank - bRank;
+        return a.distance - b.distance;
+    });
 
     const totalOcc = centers.reduce((a, c) => a + (c.currentOccupancy || 0), 0);
     const totalCap = centers.reduce((a, c) => a + (c.capacity || 0), 0);
+    const nearestAvailable = centersWithDist.find(isAvailableCenter) || centersWithDist[0];
 
     return (
         <div>
             <div className="rb-section-header">
                 <div className="rb-section-title">Evacuation Centers</div>
-                <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--gray-500)", fontFamily: "var(--font-ui)" }}>
-                    <Users size={14} />
-                    {totalOcc} / {totalCap} total occupancy
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <div style={{ display: "inline-flex", border: "1px solid var(--gray-200)", borderRadius: 8, overflow: "hidden" }}>
+                        <button
+                            className="rb-btn rb-btn-ghost rb-btn-sm"
+                            onClick={() => setScope("province")}
+                            style={{ borderRadius: 0, background: scope === "province" ? "var(--blue-50)" : "transparent", color: scope === "province" ? "var(--blue-700)" : "var(--gray-600)" }}
+                        >
+                            Province-wide
+                        </button>
+                        <button
+                            className="rb-btn rb-btn-ghost rb-btn-sm"
+                            onClick={() => setScope("barangay")}
+                            style={{ borderRadius: 0, background: scope === "barangay" ? "var(--blue-50)" : "transparent", color: scope === "barangay" ? "var(--blue-700)" : "var(--gray-600)", borderLeft: "1px solid var(--gray-200)" }}
+                        >
+                            My Barangay
+                        </button>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--gray-500)", fontFamily: "var(--font-ui)" }}>
+                        <Users size={14} />
+                        {totalOcc} / {totalCap} total occupancy
+                    </div>
                 </div>
             </div>
 
@@ -870,15 +905,21 @@ const EvacuationCenters = () => {
                 </MapContainer>
             </div>
 
-            {userLoc && centersWithDist.length > 0 && centersWithDist[0].distance !== Infinity && (
+            {userLoc && nearestAvailable && nearestAvailable.distance !== Infinity && (
                 <div style={{ marginBottom: 16, padding: 12, background: "var(--blue-50)", border: "1px solid var(--blue-200)", borderRadius: 8, display: "flex", alignItems: "center", gap: 8, color: "var(--blue-700)", fontSize: 13, fontFamily: "var(--font-ui)", fontWeight: 600 }}>
                     <Navigation size={16} />
-                    Nearest Center: {centersWithDist[0].name} ({centersWithDist[0].distance.toFixed(2)} km)
+                    Nearest Available Center: {nearestAvailable.name} ({nearestAvailable.distance.toFixed(2)} km)
                 </div>
             )}
 
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                 {loading && <div style={{ textAlign: "center", padding: 20, color: "var(--gray-500)" }}>Loading evacuation network...</div>}
+
+                {!loading && centersWithDist.length === 0 && (
+                    <div style={{ textAlign: "center", padding: 20, color: "var(--gray-500)" }}>
+                        No evacuation centers found for this scope.
+                    </div>
+                )}
 
                 {centersWithDist.map((c, i) => {
                     const status = getCenterStatus(c.currentOccupancy, c.capacity);
@@ -889,6 +930,11 @@ const EvacuationCenters = () => {
                                 <div className="evac-info">
                                     <div className="evac-name">{c.name}</div>
                                     <div className="evac-meta">
+                                        {c.provinceName && (
+                                            <div className="evac-contact">
+                                                <MapPin size={11} /> {c.barangayName || "Unknown Barangay"}, {c.provinceName}
+                                            </div>
+                                        )}
                                         {userLoc && c.distance !== Infinity && (
                                             <div className="evac-address" style={{ color: "var(--blue-600)", fontWeight: 600 }}>
                                                 <Navigation size={11} /> {c.distance.toFixed(2)} km away
@@ -1355,7 +1401,12 @@ const CommunityDirectory = () => {
         const fetchDirectory = async () => {
             try {
                 const res = await getCommunityDirectory();
-                setDirectory(res.data);
+                // Sort the directory data
+                const sorted = [...res.data].sort((a, b) => {
+                    // If same role, sort alphabetically by name
+                    return a.fullName?.localeCompare(b.fullName || '') || 0;
+                });
+                setDirectory(sorted);
             } catch (err) {
                 console.error("Error fetching directory:", err);
             } finally {
@@ -1367,17 +1418,40 @@ const CommunityDirectory = () => {
 
     if (loading) return <div className="rb-loading">Loading directory...</div>;
 
-    return (
-        <div>
-            <div className="rb-section-header">
-                <div>
-                    <div className="rb-section-title">Community Directory</div>
-                    <div style={{ fontSize: 13, color: "var(--gray-500)", fontFamily: "var(--font-ui)", marginTop: 4 }}>
-                        Public list of residents who have opted in to be visible.
-                    </div>
-                </div>
-            </div>
+    const formatRoleDisplay = (role) => {
+        const roleMap = {
+            'BARANGAY CAPTAIN': 'Barangay Captain',
+            'TANOD': 'Tanod',
+            'OFFICIAL': 'Official',
+            'VOLUNTEER': 'Volunteer',
+            'RESIDENT': 'Resident',
+        };
+        return roleMap[role?.toUpperCase()] || role || 'Resident';
+    };
 
+    const getRoleColor = (role) => {
+        const upperRole = role?.toUpperCase();
+        if (upperRole === 'BARANGAY CAPTAIN') return 'var(--red-600)';
+        if (upperRole === 'TANOD' || upperRole === 'OFFICIAL') return 'var(--blue-600)';
+        return 'var(--gray-500)';
+    };
+
+    // Group residents by category
+    const barangayCaptain = directory.filter(u => u.role?.toUpperCase() === 'BARANGAY CAPTAIN');
+    const barangayOfficials = directory.filter(u => {
+        const role = u.role?.toUpperCase();
+        return role === 'TANOD' || role === 'OFFICIAL';
+    });
+    const residents = directory.filter(u => {
+        const role = u.role?.toUpperCase();
+        return role !== 'BARANGAY CAPTAIN' && role !== 'TANOD' && role !== 'OFFICIAL';
+    });
+
+    const DirectorySection = ({ title, data }) => (
+        <div style={{ marginBottom: 32 }}>
+            <div style={{ fontSize: 14, fontWeight: 700, color: "var(--gray-900)", marginBottom: 12 }}>
+                {title}
+            </div>
             <div className="rb-card">
                 <div className="rb-table-wrap">
                     <table className="rb-table">
@@ -1386,18 +1460,18 @@ const CommunityDirectory = () => {
                                 <th>Name</th>
                                 <th>Purok</th>
                                 <th>Role</th>
-                                <th>Status</th>
+                                <th>Badge</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {directory.length === 0 ? (
+                            {data.length === 0 ? (
                                 <tr>
-                                    <td colSpan="4" style={{ textAlign: "center", padding: "40px", color: "var(--gray-400)" }}>
-                                        No residents have opted into the directory yet.
+                                    <td colSpan="4" style={{ textAlign: "center", padding: "24px", color: "var(--gray-400)", fontSize: 13 }}>
+                                        No members in this category.
                                     </td>
                                 </tr>
                             ) : (
-                                directory.map((d, i) => (
+                                data.map((d, i) => (
                                     <tr key={i}>
                                         <td style={{ fontWeight: 700, color: "var(--gray-900)" }}>{d.fullName}</td>
                                         <td>{d.purok || "N/A"}</td>
@@ -1406,9 +1480,9 @@ const CommunityDirectory = () => {
                                                 fontSize: 11,
                                                 textTransform: "uppercase",
                                                 fontWeight: 800,
-                                                color: d.role === 'OFFICIAL' ? 'var(--blue-600)' : 'var(--gray-500)'
+                                                color: getRoleColor(d.role)
                                             }}>
-                                                {d.role}
+                                                {formatRoleDisplay(d.role)}
                                             </span>
                                         </td>
                                         <td>
@@ -1425,6 +1499,31 @@ const CommunityDirectory = () => {
                     </table>
                 </div>
             </div>
+        </div>
+    );
+
+    return (
+        <div>
+            <div className="rb-section-header">
+                <div>
+                    <div className="rb-section-title">Community Directory</div>
+                    <div style={{ fontSize: 13, color: "var(--gray-500)", fontFamily: "var(--font-ui)", marginTop: 4 }}>
+                        Complete list of all residents in your barangay.
+                    </div>
+                </div>
+            </div>
+
+            {directory.length === 0 ? (
+                <div className="rb-card" style={{ textAlign: "center", padding: "40px", color: "var(--gray-400)" }}>
+                    No residents found in your barangay.
+                </div>
+            ) : (
+                <>
+                    <DirectorySection title="Barangay Captain" data={barangayCaptain} />
+                    <DirectorySection title="Barangay Officials" data={barangayOfficials} />
+                    <DirectorySection title="Residents" data={residents} />
+                </>
+            )}
 
             <div style={{ marginTop: 24, padding: 16, background: "var(--blue-50)", borderRadius: 12, border: "1px solid var(--blue-100)", display: "flex", gap: 12 }}>
                 <ShieldCheck size={20} style={{ color: "var(--blue-600)", flexShrink: 0 }} />
@@ -1436,165 +1535,7 @@ const CommunityDirectory = () => {
     );
 };
 
-// ---- PROFILE ----
-const Profile = ({ user }) => {
-    const [optIn, setOptIn] = useState(user?.directoryOptIn || false);
-    const [purok, setPurok] = useState(user?.purok || "");
-    const [saving, setSaving] = useState(false);
-
-    const handleToggleOptIn = async (e) => {
-        const val = e.target.checked;
-        setOptIn(val);
-        try {
-            await toggleDirectoryOptIn(val);
-        } catch (err) {
-            console.error("Error toggling opt-in:", err);
-            setOptIn(!val); // Revert on error
-        }
-    };
-
-    const handlePurokUpdate = async (e) => {
-        const val = e.target.value;
-        setPurok(val);
-    };
-
-    const handleSaveProfile = async () => {
-        setSaving(true);
-        try {
-            await Promise.all([
-                updateProfile({ ...user, purok }),
-                updatePurok(purok)
-            ]);
-            alert("Profile updated successfully!");
-        } catch (err) {
-            console.error("Error saving profile:", err);
-            alert("Failed to update profile.");
-        } finally {
-            setSaving(false);
-        }
-    };
-
-    return (
-        <div>
-            <div className="rb-section-title" style={{ marginBottom: 20 }}>My Profile</div>
-            <div className="rb-grid-2">
-                <div className="rb-card">
-                    <div className="rb-card-header"><div className="rb-card-title">Personal Information</div></div>
-                    <div className="rb-card-body">
-                        <div className="profile-avatar-section">
-                            <div className="profile-avatar">
-                                {user?.firstName?.charAt(0) || user?.email?.charAt(0) || "U"}
-                            </div>
-                            <div className="profile-info-group">
-                                <div className="profile-name">
-                                    {user?.firstName} {user?.lastName}
-                                </div>
-                                <div className="profile-role">Resident · Barangay {user?.barangay || "76"}</div>
-                                <button className="rb-btn rb-btn-secondary rb-btn-sm" style={{ marginTop: 8 }}>
-                                    <Camera size={13} style={{ marginRight: 6 }} /> Change Photo
-                                </button>
-                            </div>
-                        </div>
-                        <div className="rb-grid-2" style={{ gap: 12 }}>
-                            <div className="rb-form-group">
-                                <label className="rb-label">First Name</label>
-                                <input className="rb-input" defaultValue={user?.firstName} readOnly />
-                            </div>
-                            <div className="rb-form-group">
-                                <label className="rb-label">Last Name</label>
-                                <input className="rb-input" defaultValue={user?.lastName} readOnly />
-                            </div>
-                        </div>
-                        <div className="rb-form-group">
-                            <label className="rb-label">Purok / Area</label>
-                            <input
-                                className="rb-input"
-                                placeholder="Enter your purok (e.g. Purok 1, Sitio Maligaya)"
-                                value={purok}
-                                onChange={handlePurokUpdate}
-                            />
-                        </div>
-                        <div className="rb-form-group">
-                            <label className="rb-label">Address</label>
-                            <input className="rb-input" defaultValue={user?.address || "Address not set"} />
-                        </div>
-
-                        <div style={{ margin: "20px 0", padding: "16px", background: "var(--gray-50)", borderRadius: "12px", border: "1px solid var(--gray-200)" }}>
-                            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
-                                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                                    <Users size={16} style={{ color: "var(--blue-600)" }} />
-                                    <strong style={{ fontSize: 13, color: "var(--gray-900)" }}>Community Directory</strong>
-                                </div>
-                                <label className="rb-toggle">
-                                    <input
-                                        type="checkbox"
-                                        checked={optIn}
-                                        onChange={handleToggleOptIn}
-                                    />
-                                    <span className="rb-toggle-slider"></span>
-                                </label>
-                            </div>
-                            <p style={{ fontSize: 11.5, color: "var(--gray-500)", lineHeight: 1.4 }}>
-                                If enabled, your neighbors can see your name, purok, and role. Your email and phone number will remain private.
-                            </p>
-                        </div>
-
-                        <button
-                            className="rb-btn rb-btn-primary"
-                            style={{ width: "100%" }}
-                            onClick={handleSaveProfile}
-                            disabled={saving}
-                        >
-                            {saving ? "Saving..." : <><CheckCircle2 size={15} style={{ marginRight: 8 }} /> Save Changes</>}
-                        </button>
-                    </div>
-                </div>
-
-                <div>
-                    <div className="rb-card" style={{ marginBottom: 16 }}>
-                        <div className="rb-card-header">
-                            <div className="rb-card-title">Emergency Contacts</div>
-                            <button className="rb-btn rb-btn-primary rb-btn-sm">+ Add</button>
-                        </div>
-                        <div className="rb-card-body" style={{ padding: "8px 20px" }}>
-                            {[
-                                { name: "Juan Reyes", rel: "Spouse", num: "+63 917 xxx xxxx" },
-                                { name: "Elena Santos", rel: "Mother", num: "+63 918 xxx xxxx" },
-                            ].map((c, i) => (
-                                <div key={i} className="emergency-contact-row">
-                                    <div className="ec-avatar">{c.name[0]}</div>
-                                    <div style={{ flex: 1 }}>
-                                        <div style={{ fontWeight: 700, fontSize: 13, color: "var(--gray-900)" }}>
-                                            {c.name} <span style={{ color: "var(--gray-400)", fontWeight: 400 }}>· {c.rel}</span>
-                                        </div>
-                                        <div style={{ fontSize: 12, color: "var(--gray-500)" }}>{c.num}</div>
-                                    </div>
-                                    <button className="rb-btn rb-btn-ghost rb-btn-sm"><Edit2 size={13} /></button>
-                                    <button className="rb-btn rb-btn-ghost rb-btn-sm" style={{ color: "var(--red-400)" }}>
-                                        <Trash2 size={13} />
-                                    </button>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-
-                    <div className="rb-card">
-                        <div className="rb-card-header"><div className="rb-card-title">Account Security</div></div>
-                        <div className="rb-card-body" style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                            <button className="rb-btn rb-btn-secondary" style={{ width: "100%" }}>
-                                <Lock size={15} style={{ marginRight: 8 }} /> Change Password
-                            </button>
-                            <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 14px", background: "var(--green-50)", borderRadius: 8, fontSize: 12, color: "var(--green-700)", fontFamily: "var(--font-ui)", border: "1px solid var(--green-200)" }}>
-                                <ShieldCheck size={14} />
-                                <span>Account verified & secured</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
-};
+// ---- PROFILE (moved to Settings component) ----
 
 // ---- MAIN EXPORT ----
 export default function DashboardResident({ user }) {
@@ -1606,6 +1547,7 @@ export default function DashboardResident({ user }) {
 
     const [isModalOpen, setModalOpen] = useState(false);
     const [showLogout, setShowLogout] = useState(false);
+    const [showOnboarding, setShowOnboarding] = useState(false);
     const [reports, setReports] = useState([]);
     const [stats, setStats] = useState({
         activeReports: 0,
@@ -1642,6 +1584,12 @@ export default function DashboardResident({ user }) {
 
     useEffect(() => { fetchData(); }, []);
 
+    useEffect(() => {
+        if (user && user.onboardingCompleted !== true && user.onboardingCompleted !== "true") {
+            setShowOnboarding(true);
+        }
+    }, [user]);
+
     const openReport = () => setModalOpen(true);
 
     const screens = {
@@ -1649,7 +1597,7 @@ export default function DashboardResident({ user }) {
         report: <MyReports reports={reports} onReport={openReport} />,
         evacuation: <EvacuationCenters />,
         announcements: <Announcements />,
-        profile: <Profile user={user} />,
+        settings: <Settings user={user} />,
         hotlines: <Hotlines />,
         directory: <CommunityDirectory />,
     };
@@ -1659,19 +1607,35 @@ export default function DashboardResident({ user }) {
         report: "Emergency Reports",
         evacuation: "Evacuation Centers",
         announcements: "Announcements",
-        profile: "My Profile",
+        settings: "Settings",
         hotlines: "Emergency Hotlines",
         directory: "Community Directory",
     };
 
+    const subtitles = {
+        dashboard: "System overview, recent activity, and quick statistics",
+        report: "Submit, track, and manage incident reports in your barangay",
+        evacuation: "Find safe centers, check capacity, and monitor center status",
+        announcements: "Receive advisories, warnings, and barangay-wide notices",
+        settings: "Manage profile, account preferences, and app configuration",
+        hotlines: "Quick access to emergency response contact numbers",
+        directory: "View verified residents and officials in your barangay",
+    };
+
+    const currentTitle = titles[active] || titles.dashboard;
+    const currentSubtitle = subtitles[active] || subtitles.dashboard;
+
     return (
         <div className="dashboard-container" style={{ width: '100%', maxWidth: '1200px', margin: '0 auto' }}>
-            <header className="rb-header" style={{ marginBottom: '20px', borderRadius: '12px' }}>
-                <div className="rb-header-title">Resident Portal</div>
+            <header className="rb-header" style={{ marginBottom: '20px', borderRadius: '12px', height: 'auto', minHeight: 72, paddingTop: 10, paddingBottom: 10 }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                    <div className="rb-header-title">{currentTitle}</div>
+                    <div className="rb-header-sub">{currentSubtitle}</div>
+                </div>
                 <div className="rb-header-actions">
                     <div className="rb-notif-bell">
                         <Bell size={20} />
-                        <div className="rb-notif-count">2</div>
+                        <div className="rb-notif-count">{stats.alerts || 0}</div>
                     </div>
                 </div>
             </header>
@@ -1683,6 +1647,13 @@ export default function DashboardResident({ user }) {
             </div>
 
             {isModalOpen && <ReportModal onClose={() => setModalOpen(false)} onSuccess={fetchData} />}
+
+            <OnboardingModal
+                isOpen={showOnboarding}
+                onClose={() => setShowOnboarding(false)}
+                user={user}
+            />
+
             <LogoutModal
                 show={showLogout}
                 onClose={() => setShowLogout(false)}

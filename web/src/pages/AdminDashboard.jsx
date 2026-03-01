@@ -1,418 +1,267 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useMemo, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { useNavigate } from "react-router-dom";
 import api from "../services/api";
 import "./DashboardOfficial.css";
-import "./AdminDashboard.css"; // Keep previous inner table styles
-import LogoutModal from "../components/LogoutModal";
-import {
-    LayoutDashboard, ShieldCheck, Lock, Bell, Search,
-    Users, UserCheck, UserX, MapPin, Eye, CheckCircle,
-    XCircle, FileText, X, AlertCircle, Activity
-} from "lucide-react";
+import "./AdminDashboard.css";
+import { Activity, Bell, RefreshCcw, ShieldCheck, Users } from "lucide-react";
 import AdminTransfersScreen from "../components/AdminTransfersScreen";
 
-// Local Sidebar component removed. Using global Layout sidebar + internal tabs.
-
-// Inner Application Preview logic
-function DocumentPreview({ title, url, onImageClick }) {
-    if (!url) return null;
-    const isPdf = url.toLowerCase().endsWith('.pdf');
-
-    return (
-        <div className="document-card">
-            <span className="document-title">{title}</span>
-            <div className="document-preview">
-                {isPdf ? (
-                    <a href={url} target="_blank" rel="noopener noreferrer">
-                        <FileText size={48} />
-                        <br />View PDF
-                    </a>
-                ) : (
-                    <div className="image-preview-container" onClick={() => onImageClick(url, title)}>
-                        <img src={url} alt={title} style={{ width: '100%', height: '100%', objectFit: 'cover', cursor: 'pointer' }} />
-                        <div className="image-overlay">
-                            <Eye size={24} color="white" />
-                        </div>
-                    </div>
-                )}
-            </div>
-        </div>
-    );
-}
-
-function ImageModal({ url, title, onClose }) {
-    if (!url) return null;
-
-    const handleDownload = () => {
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = title.replace(/\s+/g, '_') + '_Document';
-        a.target = '_blank';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-    };
-
-    return (
-        <div className="image-modal-overlay" onClick={onClose} style={{ zIndex: 10001 }}>
-            <div className="image-modal-content" onClick={e => e.stopPropagation()}>
-                <div className="image-modal-header">
-                    <h3>{title}</h3>
-                    <div className="image-modal-actions">
-                        <button className="download-btn" onClick={handleDownload}>
-                            Download
-                        </button>
-                        <button className="close-btn" onClick={onClose}>
-                            <X size={24} />
-                        </button>
-                    </div>
-                </div>
-                <div className="image-modal-body">
-                    <img src={url} alt={title} className="full-size-image" />
-                </div>
-            </div>
-        </div>
-    );
-}
-
-const CaptainVerificationsScreen = ({ applications, stats, loading, handleAction, selectedApp, setSelectedApp, promptType, setPromptType, promptMessage, setPromptMessage, actionLoading }) => {
-    const [modalImage, setModalImage] = useState(null);
-
-    const getFullUrl = (path) => path ? `http://localhost:8080${path}` : null;
-
-    if (loading) return <div className="loader">Loading Verifications...</div>;
-
-    return (
-        <div className="rb-dashboard" style={{ padding: 0, minHeight: 'auto', background: 'transparent' }}>
-            <div className="admin-stats-container">
-                <div className="stat-card">
-                    <div className="stat-icon pending"><Users size={24} /></div>
-                    <div className="stat-content">
-                        <h3>Pending Applications</h3>
-                        <p>{stats.pending || 0}</p>
-                    </div>
-                </div>
-                <div className="stat-card">
-                    <div className="stat-icon approved"><UserCheck size={24} /></div>
-                    <div className="stat-content">
-                        <h3>Approved Captains</h3>
-                        <p>{stats.approved || 0}</p>
-                    </div>
-                </div>
-                <div className="stat-card">
-                    <div className="stat-icon rejected"><UserX size={24} /></div>
-                    <div className="stat-content">
-                        <h3>Rejected Applications</h3>
-                        <p>{stats.rejected || 0}</p>
-                    </div>
-                </div>
-                <div className="stat-card">
-                    <div className="stat-icon barangays"><MapPin size={24} /></div>
-                    <div className="stat-content">
-                        <h3>Registered Barangays</h3>
-                        <p>{stats.registeredBarangays || 0}</p>
-                    </div>
-                </div>
-            </div>
-
-            <div className="admin-content-section rb-card">
-                <table className="admin-table">
-                    <thead>
-                        <tr>
-                            <th>Application ID</th>
-                            <th>Name</th>
-                            <th>Barangay</th>
-                            <th>Municipality</th>
-                            <th>Status</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {applications.map(app => (
-                            <tr key={app.id}>
-                                <td>#{app.id}</td>
-                                <td>{app.fullName}</td>
-                                <td>{app.barangay}</td>
-                                <td>{app.cityName}</td>
-                                <td>
-                                    <span className={`status-badge ${app.accountStatus?.toLowerCase()}`}>
-                                        <div className={`status-indicator ${app.accountStatus?.toLowerCase()}`} />
-                                        {app.accountStatus === 'PENDING_VERIFICATION' ? 'Pending' :
-                                            app.accountStatus === 'REQUEST_DOCS' ? 'Docs Reqd' :
-                                                app.accountStatus || 'Pending'}
-                                    </span>
-                                </td>
-                                <td>
-                                    <button className="action-btn" onClick={() => setSelectedApp(app)}>
-                                        <Eye size={16} /> View
-                                    </button>
-                                </td>
-                            </tr>
-                        ))}
-                        {applications.length === 0 && (
-                            <tr>
-                                <td colSpan="6" style={{ textAlign: 'center', padding: '24px' }}>No pending applications found</td>
-                            </tr>
-                        )}
-                    </tbody>
-                </table>
-            </div>
-
-            {selectedApp && (
-                <div className="modal-overlay" style={{ zIndex: 9999 }}>
-                    <div className="modal-content">
-                        <div className="modal-header">
-                            <h2>Application Details: {selectedApp.fullName}</h2>
-                            <button className="close-btn" onClick={() => setSelectedApp(null)}>
-                                <X size={24} />
-                            </button>
-                        </div>
-                        <div className="modal-body">
-                            <div className="info-grid">
-                                <div className="info-section">
-                                    <h3><Users size={18} /> Personal Info</h3>
-                                    <div className="info-row"><span className="info-label">Full Name</span><span className="info-value">{selectedApp.fullName}</span></div>
-                                    <div className="info-row"><span className="info-label">Date of Birth</span><span className="info-value">{selectedApp.captainDetails?.dateOfBirth || "N/A"}</span></div>
-                                    <div className="info-row"><span className="info-label">Contact Number</span><span className="info-value">{selectedApp.contactNumber || "N/A"}</span></div>
-                                    <div className="info-row"><span className="info-label">Email</span><span className="info-value">{selectedApp.email}</span></div>
-                                </div>
-                                <div className="info-section">
-                                    <h3><MapPin size={18} /> Barangay Info</h3>
-                                    <div className="info-row"><span className="info-label">Barangay Name</span><span className="info-value">{selectedApp.barangay}</span></div>
-                                    <div className="info-row"><span className="info-label">Municipality</span><span className="info-value">{selectedApp.cityName}</span></div>
-                                    <div className="info-row"><span className="info-label">Province</span><span className="info-value">{selectedApp.provinceName}</span></div>
-                                    <div className="info-row"><span className="info-label">Barangay Code</span><span className="info-value">{selectedApp.barangayCode}</span></div>
-                                </div>
-                            </div>
-                            <div className="documents-section">
-                                <h3><FileText size={18} /> Uploaded Documents</h3>
-                                <div className="documents-grid">
-                                    <DocumentPreview title="Government ID" url={getFullUrl(selectedApp.captainDetails?.governmentIdUrl)} onImageClick={(url, title) => setModalImage({ url, title })} />
-                                    <DocumentPreview title="Certificate of Appt." url={getFullUrl(selectedApp.captainDetails?.certificateOfAppointmentUrl)} onImageClick={(url, title) => setModalImage({ url, title })} />
-                                    {selectedApp.captainDetails?.barangayResolutionUrl && (
-                                        <DocumentPreview title="Barangay Resolution" url={getFullUrl(selectedApp.captainDetails?.barangayResolutionUrl)} onImageClick={(url, title) => setModalImage({ url, title })} />
-                                    )}
-                                    <DocumentPreview title="Selfie with ID" url={getFullUrl(selectedApp.captainDetails?.selfieUrl)} onImageClick={(url, title) => setModalImage({ url, title })} />
-                                </div>
-                            </div>
-                        </div>
-
-                        {selectedApp.accountStatus !== 'APPROVED' && selectedApp.accountStatus !== 'REJECTED' && (
-                            <div className="modal-footer">
-                                <button className="action-btn btn-reject" onClick={() => setPromptType('reject')}>
-                                    <XCircle size={16} /> Reject
-                                </button>
-                                <button className="action-btn btn-request" onClick={() => setPromptType('request')}>
-                                    <AlertCircle size={16} /> Request Docs
-                                </button>
-                                <button className="action-btn btn-approve" onClick={() => handleAction('approve')} disabled={actionLoading}>
-                                    <CheckCircle size={16} /> Approve
-                                </button>
-                            </div>
-                        )}
-                    </div>
-                </div>
-            )}
-
-            {promptType && (
-                <div className="prompt-modal-overlay" style={{ zIndex: 10000 }}>
-                    <div className="prompt-modal">
-                        <h3>{promptType === 'reject' ? 'Reason for Rejection' : 'Additional Documents Required'}</h3>
-                        <textarea
-                            value={promptMessage}
-                            onChange={(e) => setPromptMessage(e.target.value)}
-                            placeholder={promptType === 'reject' ? 'Enter reason...' : 'Specify what documents are needed...'}
-                            autoFocus
-                        />
-                        <div className="prompt-actions">
-                            <button className="action-btn" onClick={() => setPromptType(null)}>Cancel</button>
-                            <button
-                                className="action-btn btn-approve"
-                                onClick={() => handleAction(promptType)}
-                                disabled={!promptMessage.trim() || actionLoading}
-                            >
-                                Submit
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {modalImage && (
-                <ImageModal
-                    url={modalImage.url}
-                    title={modalImage.title}
-                    onClose={() => setModalImage(null)}
-                />
-            )}
-        </div>
-    );
+const TITLES = {
+  dashboard: {
+    title: "Dashboard",
+    subtitle: "System overview, recent activity, and quick statistics"
+  },
+  analytics: {
+    title: "Analytics",
+    subtitle: "Emergency trends, barangay activity, and usage statistics"
+  },
+  "audit-logs": {
+    title: "Audit Logs",
+    subtitle: "Admin actions and security monitoring"
+  },
+  barangays: {
+    title: "Barangays",
+    subtitle: "View all barangays, activate/deactivate, and assigned captains"
+  },
+  "captain-verifications": {
+    title: "Captain Verifications",
+    subtitle: "Approve newly registered captains and validate submitted documents"
+  },
+  "captain-transfers": {
+    title: "Captain Transfers",
+    subtitle: "Election turnover requests and ownership transfer approvals"
+  },
+  "officials-verification": {
+    title: "Officials Verification",
+    subtitle: "Approve barangay officials appointed by captains"
+  },
+  users: {
+    title: "Users",
+    subtitle: "Residents, officials, captains, and account management"
+  },
+  "emergency-reports": {
+    title: "Emergency Reports",
+    subtitle: "Monitor incidents nationwide and flag false reports"
+  },
+  "evacuation-centers": {
+    title: "Evacuation Centers",
+    subtitle: "Review evacuation center listings and remove incorrect entries"
+  },
+  announcements: {
+    title: "Announcements",
+    subtitle: "Send alerts to all barangays or specific areas"
+  },
+  "system-settings": {
+    title: "System Settings",
+    subtitle: "API integrations, notification controls, and feature toggles"
+  },
+  "system-logs": {
+    title: "System Logs",
+    subtitle: "Backend/system events and error monitoring"
+  },
+  "admin-management": {
+    title: "Admin Management",
+    subtitle: "Add and remove admin accounts"
+  }
 };
 
-export default function AdminDashboard() {
-    const { user, logout } = useAuth();
-    const navigate = useNavigate();
-    const [active, setActive] = useState("verifications");
-    const [showLogout, setShowLogout] = useState(false);
+const Section = ({ children }) => <div className="admin-module-card">{children}</div>;
 
-    // Verification data
-    const [stats, setStats] = useState({});
-    const [applications, setApplications] = useState([]);
-    const [loading, setLoading] = useState(true);
+function Overview({ overview, setActive }) {
+  return (
+    <div>
+      <div className="admin-overview-alert">ADMIN MONITORING: real-time system status and oversight</div>
 
-    const [selectedApp, setSelectedApp] = useState(null);
-    const [promptType, setPromptType] = useState(null);
-    const [promptMessage, setPromptMessage] = useState('');
-    const [actionLoading, setActionLoading] = useState(false);
+      <div className="admin-overview-actions">
+        <button className="admin-overview-action" onClick={() => setActive("captain-verifications")}>
+          <ShieldCheck size={20} />
+          <div>
+            <div className="admin-overview-action-title">Review Captain Verifications</div>
+            <div className="admin-overview-action-sub">Approve or reject pending captain applications</div>
+          </div>
+        </button>
+        <button className="admin-overview-action" onClick={() => setActive("captain-transfers")}>
+          <RefreshCcw size={20} />
+          <div>
+            <div className="admin-overview-action-title">Review Captain Transfers</div>
+            <div className="admin-overview-action-sub">Process leadership turnover requests</div>
+          </div>
+        </button>
+      </div>
 
-    useEffect(() => {
-        if (!user || (user.role !== 'OFFICIAL' && user.role !== 'Super Admin')) {
-            navigate('/dashboard');
-            return;
-        }
-        fetchData();
-    }, [user, navigate]);
+      <div className="admin-overview-stats">
+        <div className="admin-overview-stat-card"><div className="admin-overview-stat-label">Total Registered Barangays</div><div className="admin-overview-stat-value">{overview.totalRegisteredBarangays}</div></div>
+        <div className="admin-overview-stat-card"><div className="admin-overview-stat-label">Pending Barangay Verifications</div><div className="admin-overview-stat-value">{overview.pendingBarangayVerifications}</div></div>
+        <div className="admin-overview-stat-card"><div className="admin-overview-stat-label">Pending Captain Transfers</div><div className="admin-overview-stat-value">{overview.pendingCaptainTransfers}</div></div>
+        <div className="admin-overview-stat-card"><div className="admin-overview-stat-label">Total Users</div><div className="admin-overview-stat-value">{overview.totalUsers}</div></div>
+        <div className="admin-overview-stat-card"><div className="admin-overview-stat-label">Active Emergency Reports</div><div className="admin-overview-stat-value">{overview.activeEmergencyReports}</div></div>
+      </div>
 
-    const fetchData = async () => {
-        setLoading(true);
-        try {
-            const [statsRes, appsRes] = await Promise.all([
-                api.get('/admin/verifications/stats'),
-                api.get('/admin/verifications')
-            ]);
-            setStats(statsRes.data);
-            setApplications(appsRes.data);
-        } catch (err) {
-            console.error("Failed to fetch admin data", err);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleAction = async (action) => {
-        if (!selectedApp) return;
-        setActionLoading(true);
-        try {
-            if (action === 'approve') {
-                await api.post(`/admin/verifications/${selectedApp.id}/approve`);
-            } else if (action === 'reject') {
-                await api.post(`/admin/verifications/${selectedApp.id}/reject`, { reason: promptMessage });
-                setPromptType(null);
-            } else if (action === 'request') {
-                await api.post(`/admin/verifications/${selectedApp.id}/request-docs`, { message: promptMessage });
-                setPromptType(null);
-            }
-            setPromptMessage('');
-            setSelectedApp(null);
-            fetchData();
-        } catch (err) {
-            alert(err.response?.data?.message || 'Failed to process action');
-        } finally {
-            setActionLoading(false);
-        }
-    };
-
-    const handleLogout = () => {
-        logout();
-        navigate('/');
-    };
-
-    const screens = {
-        verifications: (
-            <CaptainVerificationsScreen
-                applications={applications}
-                stats={stats}
-                loading={loading}
-                handleAction={handleAction}
-                selectedApp={selectedApp}
-                setSelectedApp={setSelectedApp}
-                promptType={promptType}
-                setPromptType={setPromptType}
-                promptMessage={promptMessage}
-                setPromptMessage={setPromptMessage}
-                actionLoading={actionLoading}
-            />
-        ),
-        transfers: <AdminTransfersScreen />,
-        overview: <div className="rb-empty"><div className="rb-empty-icon"><LayoutDashboard size={48} /></div><div className="rb-empty-text">System Overview Panel</div></div>
-    };
-
-    const titles = {
-        verifications: "Captain Verifications",
-        transfers: "Captain Transfers",
-        overview: "System Administration"
-    };
-
-    return (
-        <div className="rb-dashboard">
-            <div className="rb-section-header" style={{ marginBottom: 24 }}>
-                <div>
-                    <div className="rb-section-title">System Administration</div>
-                    <div className="rb-section-sub">Manage captain registrations, ownership transfers, and system health</div>
-                </div>
-            </div>
-
-            <div className="rb-tabs" style={{
-                display: 'flex',
-                gap: '24px',
-                borderBottom: '1px solid var(--gray-200)',
-                marginBottom: '28px',
-                padding: '0 4px'
-            }}>
-                <button
-                    className={`rb-tab ${active === 'verifications' ? 'active' : ''}`}
-                    onClick={() => setActive('verifications')}
-                    style={{
-                        padding: '12px 0',
-                        borderBottom: active === 'verifications' ? '2px solid var(--blue-600)' : '2px solid transparent',
-                        background: 'transparent', border: 'none', cursor: 'pointer',
-                        fontWeight: active === 'verifications' ? '700' : '500',
-                        color: active === 'verifications' ? 'var(--blue-600)' : 'var(--gray-500)',
-                        fontSize: '14px', display: 'flex', alignItems: 'center', gap: '8px'
-                    }}
-                >
-                    <ShieldCheck size={18} /> Captain Verifications
-                </button>
-                <button
-                    className={`rb-tab ${active === 'transfers' ? 'active' : ''}`}
-                    onClick={() => setActive('transfers')}
-                    style={{
-                        padding: '12px 0',
-                        borderBottom: active === 'transfers' ? '2px solid var(--blue-600)' : '2px solid transparent',
-                        background: 'transparent', border: 'none', cursor: 'pointer',
-                        fontWeight: active === 'transfers' ? '700' : '500',
-                        color: active === 'transfers' ? 'var(--blue-600)' : 'var(--gray-500)',
-                        fontSize: '14px', display: 'flex', alignItems: 'center', gap: '8px'
-                    }}
-                >
-                    <Activity size={18} /> Captain Transfers
-                </button>
-                <button
-                    className={`rb-tab ${active === 'overview' ? 'active' : ''}`}
-                    onClick={() => setActive('overview')}
-                    style={{
-                        padding: '12px 0',
-                        borderBottom: active === 'overview' ? '2px solid var(--blue-600)' : '2px solid transparent',
-                        background: 'transparent', border: 'none', cursor: 'pointer',
-                        fontWeight: active === 'overview' ? '700' : '500',
-                        color: active === 'overview' ? 'var(--blue-600)' : 'var(--gray-500)',
-                        fontSize: '14px', display: 'flex', alignItems: 'center', gap: '8px'
-                    }}
-                >
-                    <LayoutDashboard size={18} /> System Overview
-                </button>
-            </div>
-
-            <div className="admin-content-body">
-                {screens[active]}
-            </div>
-
-            <LogoutModal
-                show={showLogout}
-                onClose={() => setShowLogout(false)}
-                onConfirm={handleLogout}
-            />
+      <div className="admin-overview-widgets">
+        <div className="admin-overview-widget">
+          <div className="admin-overview-widget-title"><Bell size={14} /> Recent Activity</div>
+          <div className="admin-overview-list">
+            {overview.recentActivity.map((x, i) => <div className="admin-overview-list-item" key={i}><span>{x.label}</span><small>{x.time}</small></div>)}
+          </div>
         </div>
-    );
+        <div className="admin-overview-widget">
+          <div className="admin-overview-widget-title"><Users size={14} /> New Registrations</div>
+          <div className="admin-overview-list">
+            {overview.newRegistrations.map((x) => <div className="admin-overview-list-item" key={x.id}><span>{x.name}</span><small>{x.status}</small></div>)}
+          </div>
+        </div>
+        <div className="admin-overview-widget">
+          <div className="admin-overview-widget-title"><Activity size={14} /> Recent Reports</div>
+          <div className="admin-overview-list">
+            {overview.recentReports.map((x) => <div className="admin-overview-list-item" key={x.id}><span>{x.type}</span><small>{x.status}</small></div>)}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const SimpleTable = ({ columns, rows }) => (
+  <div className="admin-content-section">
+    <table className="admin-table">
+      <thead><tr>{columns.map((c) => <th key={c}>{c}</th>)}</tr></thead>
+      <tbody>
+        {rows.length
+          ? rows.map((r, i) => <tr key={i}>{r.map((v, j) => <td key={j}>{v}</td>)}</tr>)
+          : <tr><td colSpan={columns.length} style={{ textAlign: "center", padding: 24 }}>No records found</td></tr>}
+      </tbody>
+    </table>
+  </div>
+);
+
+export default function AdminDashboard() {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const active = new URLSearchParams(location.search).get("tab") || "dashboard";
+
+  const [applications, setApplications] = useState([]);
+  const [transfers, setTransfers] = useState([]);
+  const [users, setUsers] = useState([]);
+  const [reports, setReports] = useState([]);
+  const [centers, setCenters] = useState([]);
+  const [overview, setOverview] = useState({
+    totalRegisteredBarangays: 0,
+    pendingBarangayVerifications: 0,
+    pendingCaptainTransfers: 0,
+    totalUsers: 0,
+    activeEmergencyReports: 0,
+    newRegistrations: [],
+    recentReports: [],
+    recentActivity: []
+  });
+
+  const setActive = (tab) => navigate(`/admin/verifications?tab=${tab}`);
+
+  useEffect(() => {
+    if (!user || (user.role !== "OFFICIAL" && user.role !== "Super Admin")) {
+      navigate("/dashboard");
+      return;
+    }
+
+    (async () => {
+      try {
+        const [statsRes, appsRes, transfersRes, reportsRes, usersRes, centersRes] = await Promise.all([
+          api.get("/admin/verifications/stats"),
+          api.get("/admin/verifications"),
+          api.get("/admin/transfers"),
+          api.get("/reports"),
+          api.get("/user/all"),
+          api.get("/evacuation-centers")
+        ]);
+
+        const a = appsRes.data || [];
+        const t = transfersRes.data || [];
+        const r = reportsRes.data || [];
+        const u = usersRes.data || [];
+
+        setApplications(a);
+        setTransfers(t);
+        setReports(r);
+        setUsers(u);
+        setCenters(centersRes.data || []);
+
+        setOverview({
+          totalRegisteredBarangays: statsRes.data?.registeredBarangays || 0,
+          pendingBarangayVerifications: statsRes.data?.pending || 0,
+          pendingCaptainTransfers: t.length,
+          totalUsers: u.length,
+          activeEmergencyReports: r.filter((x) => (x.status || "").toUpperCase() !== "RESOLVED").length,
+          newRegistrations: a.slice(0, 5).map((x) => ({ id: x.id, name: x.fullName || "Unknown", status: x.accountStatus || "PENDING" })),
+          recentReports: r.slice(0, 5).map((x) => ({ id: x.id, type: x.incidentType || "Incident", status: x.status || "PENDING" })),
+          recentActivity: [
+            ...a.slice(0, 3).map((x) => ({ label: `Captain application: ${x.fullName || "Unknown"}`, time: x.accountStatus || "Pending" })),
+            ...r.slice(0, 2).map((x) => ({ label: `Report: ${x.incidentType || "Incident"} at ${x.location || "Unknown"}`, time: x.status || "Pending" }))
+          ]
+        });
+      } catch (e) {
+        console.error("Failed to fetch admin data", e);
+      }
+    })();
+  }, [user, navigate]);
+
+  const barangayRows = useMemo(() => {
+    const map = new Map();
+    users.forEach((u) => {
+      const key = `${u.barangayCode || u.barangay || "unknown"}-${u.cityCode || u.cityName || "unknown"}`;
+      if (!map.has(key)) {
+        map.set(key, { barangay: u.barangay || "Unknown", city: u.cityName || "Unknown", captain: "Unassigned", status: "Pending" });
+      }
+      if ((u.role || "").toLowerCase() === "barangay captain" && (u.accountStatus || "").toUpperCase() === "APPROVED") {
+        map.set(key, { ...map.get(key), captain: u.fullName || "Unnamed Captain", status: "Verified" });
+      }
+    });
+    return [...map.values()].map((x) => [x.barangay, x.city, x.captain, x.status, "View"]);
+  }, [users]);
+
+  const adminUsers = users.filter((x) => {
+    const role = (x.role || "").toUpperCase();
+    return role === "OFFICIAL" || role === "SUPER ADMIN";
+  });
+
+  const screens = {
+    dashboard: <Overview overview={overview} setActive={setActive} />,
+    analytics: <Section><SimpleTable columns={["Metric", "Value"]} rows={[["Emergency trends (reports)", reports.length], ["Barangay activity", barangayRows.length], ["Usage statistics (users)", users.length], ["Pending captain transfers", transfers.length]]} /></Section>,
+    "audit-logs": <Section><SimpleTable columns={["Admin", "Action", "Time"]} rows={overview.recentActivity.map((x) => [user?.fullName || "Admin", x.label, x.time])} /></Section>,
+    barangays: <Section><SimpleTable columns={["Barangay", "City", "Captain", "Status", "Actions"]} rows={barangayRows} /></Section>,
+    "captain-verifications": <Section><SimpleTable columns={["Name", "Barangay", "ID", "Certificate", "Contact", "Status"]} rows={applications.map((x) => [x.fullName || "Unknown", x.barangay || "Unknown", x.captainDetails?.governmentIdUrl ? "Uploaded" : "Missing", x.captainDetails?.certificateOfAppointmentUrl ? "Uploaded" : "Missing", x.contactNumber || "N/A", x.accountStatus || "PENDING"])} /></Section>,
+    "captain-transfers": <AdminTransfersScreen />,
+    "officials-verification": <Section><SimpleTable columns={["Name", "Barangay", "Role", "ID", "Status"]} rows={users.filter((x) => (x.role || "").toUpperCase() === "OFFICIAL").map((x) => [x.fullName || "Unknown", x.barangay || "Unknown", x.role || "OFFICIAL", x.validIdUrl ? "Uploaded" : "Missing", x.accountStatus || "APPROVED"])} /></Section>,
+    users: <Section><SimpleTable columns={["Name", "Role", "Barangay", "Status"]} rows={users.map((x) => [x.fullName || "Unknown", x.role || "Unknown", x.barangay || "Unknown", x.accountStatus || "APPROVED"])} /></Section>,
+    "emergency-reports": <Section><SimpleTable columns={["Location", "Barangay", "Status", "Time Submitted"]} rows={reports.map((x) => [x.location || "Unknown", x.user?.barangay || "Unknown", x.status || "PENDING", x.createdAt ? new Date(x.createdAt).toLocaleString() : "N/A"])} /></Section>,
+    "evacuation-centers": <Section><SimpleTable columns={["Center", "Barangay", "Capacity", "Status"]} rows={centers.map((x) => [x.name || "Unnamed", x.barangayName || "Unknown", `${x.currentOccupancy || 0}/${x.capacity || 0}`, x.status || "Open"])} /></Section>,
+    announcements: <Section><SimpleTable columns={["Announcement", "Scope", "Status"]} rows={[["Typhoon warning template", "All barangays", "Draft"], ["System maintenance advisory", "Specific area", "Draft"]]} /></Section>,
+    "system-settings": <Section><SimpleTable columns={["Setting", "Status"]} rows={[["API integrations", "Configured"], ["Notification controls", "Configured"], ["Feature toggles", "Configured"]]} /></Section>,
+    "system-logs": <Section><SimpleTable columns={["Event", "Level", "Timestamp"]} rows={reports.slice(0, 10).map((x) => [`Report ${x.id || "N/A"} processed`, (x.status || "INFO").toUpperCase(), x.createdAt ? new Date(x.createdAt).toLocaleString() : "N/A"])} /></Section>,
+    "admin-management": <Section><SimpleTable columns={["Name", "Role", "Email", "Status"]} rows={adminUsers.map((x) => [x.fullName || "Unknown", x.role || "OFFICIAL", x.email || "N/A", x.accountStatus || "APPROVED"])} /></Section>
+  };
+
+  const current = TITLES[active] || TITLES.dashboard;
+
+  return (
+    <div className="rb-dashboard">
+      <header className="rb-header admin-rb-header" style={{ marginBottom: 20, borderRadius: 12 }}>
+        <div className="admin-rb-header-text">
+          <div className="rb-header-title">{current.title}</div>
+          <div className="admin-rb-header-sub">{current.subtitle}</div>
+        </div>
+        <div className="rb-header-actions">
+          <div className="rb-notif-bell">
+            <Bell size={20} />
+            <div className="rb-notif-count">
+              {overview.pendingBarangayVerifications + overview.pendingCaptainTransfers}
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <div className="admin-content-body">{screens[active] || screens.dashboard}</div>
+    </div>
+  );
 }

@@ -12,7 +12,7 @@ import TransferOwnershipModal from "../components/TransferOwnershipModal";
 import AlertModal from "../components/AlertModal";
 import IncidentDetailModal from "../components/IncidentDetailModal";
 import ManageEvacuationCenters from "../components/ManageEvacuationCenters";
-import { getReports, getUsers, updateUserRole, transferCaptain, assignResponder } from "../services/api";
+import { getReports, getUsers, updateUserRole, transferCaptain, assignResponder, updateProfile } from "../services/api";
 import { useEffect } from "react";
 
 // ---- ICONS (using Lucide) ----
@@ -270,11 +270,25 @@ const PersonnelManagement = () => {
 
 // ---- SCREEN: PROFILE / HANDOVER ----
 const CaptainProfile = ({ user }) => {
+    const [visibility, setVisibility] = useState(user?.profileVisibility || "OFFICIALS");
+    const [saving, setSaving] = useState(false);
     const [users, setUsers] = useState([]);
     const [targetUserId, setTargetUserId] = useState("");
-    const [loading, setLoading] = useState(false);
     const [showConfirmModal, setShowConfirmModal] = useState(false);
     const [showAlertModal, setShowAlertModal] = useState(false);
+
+    const handleSaveVisibility = async () => {
+        setSaving(true);
+        try {
+            await updateProfile({ ...user, profileVisibility: visibility });
+            alert("Profile visibility updated!");
+        } catch (err) {
+            console.error(err);
+            alert("Failed to update visibility.");
+        } finally {
+            setSaving(false);
+        }
+    };
 
     useEffect(() => {
         getUsers()
@@ -296,6 +310,35 @@ const CaptainProfile = ({ user }) => {
                 </div>
             </div>
 
+            <div className="rb-card" style={{ maxWidth: 600, marginBottom: 24 }}>
+                <div className="rb-card-header"><div className="rb-card-title">Privacy & Visibility</div></div>
+                <div className="rb-card-body">
+                    <div style={{ marginBottom: 16 }}>
+                        <label className="rb-label">Directory Visibility</label>
+                        <select
+                            className="rb-input"
+                            value={visibility}
+                            onChange={(e) => setVisibility(e.target.value)}
+                        >
+                            <option value="PRIVATE">Private (Only me)</option>
+                            <option value="OFFICIALS">Officials Only (Searchable by other Officials)</option>
+                            <option value="RESIDENTS">All Residents (Searchable by everyone)</option>
+                        </select>
+                        <p style={{ fontSize: 11, color: "var(--gray-500)", marginTop: 8 }}>
+                            Controls who can see your profile in the Community Directory.
+                        </p>
+                    </div>
+                    <button
+                        className="rb-btn rb-btn-primary"
+                        onClick={handleSaveVisibility}
+                        disabled={saving}
+                        style={{ width: "100%" }}
+                    >
+                        {saving ? "Saving..." : "Save Visibility Settings"}
+                    </button>
+                </div>
+            </div>
+
             <div className="rb-card" style={{ maxWidth: 600, border: "1px solid var(--red-200)" }}>
                 <div className="rb-card-header" style={{ background: "var(--red-50)", borderBottom: "1px solid var(--red-100)" }}>
                     <div className="rb-card-title" style={{ color: "var(--red-700)", display: "flex", alignItems: "center" }}>
@@ -311,7 +354,7 @@ const CaptainProfile = ({ user }) => {
                     <button
                         className="rb-btn rb-btn-primary"
                         onClick={handleTransferClick}
-                        disabled={loading}
+                        disabled={saving}
                         style={{ background: "var(--red-600)", border: "none" }}
                     >
                         Initiate Captain Ownership Transfer

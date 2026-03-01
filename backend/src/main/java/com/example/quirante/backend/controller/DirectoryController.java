@@ -42,7 +42,8 @@ public class DirectoryController {
         log.setRemarks("User viewed the Community Directory for barangay: " + currentUser.getBarangay());
         auditLogRepository.save(log);
 
-        List<User> residents = userRepository.findByBarangayCodeAndDirectoryOptInTrue(currentUser.getBarangayCode());
+        // Get all residents in the same barangay
+        List<User> residents = userRepository.findByBarangayCode(currentUser.getBarangayCode());
 
         List<DirectoryEntryDTO> directory = residents.stream()
                 .map(u -> new DirectoryEntryDTO(

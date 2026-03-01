@@ -18,7 +18,9 @@ api.interceptors.request.use((config) => {
 });
 
 export const login = (credentials) => api.post('/auth/login', credentials);
-export const register = (userData) => api.post('/auth/register', userData);
+export const register = (userData) => api.post('/auth/register', userData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+});
 
 // Reports
 export const getReports = () => api.get('/reports');
@@ -46,6 +48,14 @@ export const verifyTransfer = (formData) => api.post('/transfers/verify-new-capt
 });
 
 export const updateProfile = (profileData) => api.put('/user/profile', profileData);
+export const getBarangayStats = () => api.get('/user/barangay-stats');
+export const uploadProfilePicture = (file) => {
+    const formData = new FormData();
+    formData.append('profilePicture', file);
+    return api.post('/user/profile-picture', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+    });
+};
 
 // Admin Transfers
 export const getPendingTransfers = () => api.get('/admin/transfers');
@@ -54,6 +64,8 @@ export const rejectTransferSubmit = (id, reason) => api.post(`/admin/transfers/$
 
 // Evacuation Centers
 export const getEvacuationCenters = () => api.get('/evacuation-centers').then(res => res.data);
+export const getScopedEvacuationCenters = (scope = 'province') =>
+    api.get(`/evacuation-centers/scoped?scope=${encodeURIComponent(scope)}`).then(res => res.data);
 export const createEvacuationCenter = (formData) => api.post('/evacuation-centers', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
 });

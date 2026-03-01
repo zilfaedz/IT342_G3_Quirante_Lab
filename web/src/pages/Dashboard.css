@@ -59,7 +59,7 @@
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    font-family: 'Barlow Condensed', sans-serif;
+    font-family: 'Montserrat', sans-serif;
     font-size: 10px;
     font-weight: 700;
     letter-spacing: 0.2em;
@@ -78,7 +78,7 @@
 }
 
 .dash-banner-title {
-    font-family: 'Barlow Condensed', sans-serif;
+    font-family: 'Montserrat', sans-serif;
     font-size: clamp(22px, 2.2vw, 30px);
     font-weight: 900;
     color: var(--white);
@@ -104,7 +104,7 @@
 }
 
 .dash-btn-declare {
-    font-family: 'Barlow Condensed', sans-serif;
+    font-family: 'Montserrat', sans-serif;
     font-size: 13px;
     font-weight: 800;
     padding: 11px 22px;
@@ -126,7 +126,7 @@
 }
 
 .dash-btn-broadcast {
-    font-family: 'Barlow Condensed', sans-serif;
+    font-family: 'Montserrat', sans-serif;
     font-size: 13px;
     font-weight: 700;
     padding: 11px 22px;
@@ -205,7 +205,7 @@
 }
 
 .dash-stat-delta {
-    font-family: 'Barlow Condensed', sans-serif;
+    font-family: 'Montserrat', sans-serif;
     font-size: 11px;
     font-weight: 700;
     padding: 3px 9px;
@@ -230,7 +230,7 @@
 }
 
 .dash-stat-value {
-    font-family: 'Barlow Condensed', sans-serif;
+    font-family: 'Montserrat', sans-serif;
     font-size: 34px;
     font-weight: 900;
     color: var(--text-dark);
@@ -275,7 +275,7 @@
 }
 
 .dash-card-title {
-    font-family: 'Barlow Condensed', sans-serif;
+    font-family: 'Montserrat', sans-serif;
     font-size: 15px;
     font-weight: 800;
     text-transform: uppercase;
@@ -284,7 +284,7 @@
 }
 
 .dash-card-action {
-    font-family: 'Barlow Condensed', sans-serif;
+    font-family: 'Montserrat', sans-serif;
     font-size: 12px;
     font-weight: 700;
     letter-spacing: 0.08em;
@@ -335,7 +335,7 @@
 }
 
 .dash-incident-id {
-    font-family: 'Barlow Condensed', sans-serif;
+    font-family: 'Montserrat', sans-serif;
     font-size: 10px;
     font-weight: 700;
     letter-spacing: 0.14em;
@@ -345,7 +345,7 @@
 }
 
 .dash-incident-type {
-    font-family: 'Barlow Condensed', sans-serif;
+    font-family: 'Montserrat', sans-serif;
     font-size: 15px;
     font-weight: 800;
     text-transform: uppercase;
@@ -378,7 +378,7 @@
 
 /* Severity badges */
 .sev-badge {
-    font-family: 'Barlow Condensed', sans-serif;
+    font-family: 'Montserrat', sans-serif;
     font-size: 10px;
     font-weight: 800;
     letter-spacing: 0.1em;
@@ -409,7 +409,7 @@
 
 /* Status badges */
 .status-badge {
-    font-family: 'Barlow Condensed', sans-serif;
+    font-family: 'Montserrat', sans-serif;
     font-size: 10px;
     font-weight: 700;
     letter-spacing: 0.08em;
@@ -508,7 +508,7 @@
 }
 
 .dash-alert-title {
-    font-family: 'Barlow Condensed', sans-serif;
+    font-family: 'Montserrat', sans-serif;
     font-size: 14px;
     font-weight: 800;
     text-transform: uppercase;
@@ -572,7 +572,7 @@
 }
 
 .dash-evac-name {
-    font-family: 'Barlow Condensed', sans-serif;
+    font-family: 'Montserrat', sans-serif;
     font-size: 13px;
     font-weight: 800;
     text-transform: uppercase;
@@ -582,7 +582,7 @@
 }
 
 .dash-evac-status {
-    font-family: 'Barlow Condensed', sans-serif;
+    font-family: 'Montserrat', sans-serif;
     font-size: 10px;
     font-weight: 800;
     text-transform: uppercase;
@@ -625,6 +625,6 @@
 
 .dash-evac-pct {
     font-weight: 600;
-    font-family: 'Barlow Condensed', sans-serif;
+    font-family: 'Montserrat', sans-serif;
     letter-spacing: 0.04em;
 }

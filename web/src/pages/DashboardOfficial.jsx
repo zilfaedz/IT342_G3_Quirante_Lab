@@ -9,7 +9,7 @@ import "../global.css";
 import LogoutModal from "../components/LogoutModal";
 import IncidentDetailModal from "../components/IncidentDetailModal";
 import ManageEvacuationCenters from "../components/ManageEvacuationCenters";
-import { getReports, getUsers, assignResponder } from "../services/api";
+import { getReports, getUsers, assignResponder, getCommunityDirectory, updateProfile } from "../services/api";
 import { useEffect } from "react";
 
 // ---- ICONS (using Lucide) ----
@@ -205,46 +205,133 @@ const IncidentManagement = ({ incidents, onRefresh }) => {
     );
 };
 
-const ResidentDirectory = () => (
-    <div>
-        <div className="rb-section-header">
-            <div className="rb-section-title">Resident Directory</div>
-            <button className="rb-btn rb-btn-primary rb-btn-sm"><Plus size={14} style={{ marginRight: 6 }} /> Register Resident</button>
-        </div>
-        <div className="rb-filters">
-            <input className="rb-search-input" style={{ width: 300 }} placeholder="Search by Name, Address, or Contact..." />
-            <select className="rb-filter-select"><option>Filter Zone</option></select>
-            <select className="rb-filter-select"><option>Vulnerability Status</option><option>Elderly</option><option>PWD</option></select>
-        </div>
-        <div className="rb-card">
-            <div className="rb-table-wrap">
-                <table className="rb-table">
-                    <thead>
-                        <tr><th>Profile</th><th>Name</th><th>Contact</th><th>Address</th><th>Zone</th><th>Vulnerability</th><th>History</th><th>Action</th></tr>
-                    </thead>
-                    <tbody>
-                        {[
-                            { name: "Juan Dela Cruz", contact: "09171234567", address: "123 Mabini St.", zone: "4", Tag: "Elderly" },
-                            { name: "Maria Clara Santos", contact: "09187654321", address: "45 P. Burgos.", zone: "1", Tag: "—" },
-                            { name: "Crisostomo Ibarra", contact: "09228889999", address: "88 Rizal Ave.", zone: "2", Tag: "PWD" },
-                        ].map((r, i) => (
-                            <tr key={i}>
-                                <td><div className="rb-avatar" style={{ width: 30, height: 30, fontSize: 11 }}>{r.name[0]}</div></td>
-                                <td><div style={{ fontWeight: 600 }}>{r.name}</div></td>
-                                <td>{r.contact}</td>
-                                <td>{r.address}</td>
-                                <td>Zone {r.zone}</td>
-                                <td>{r.Tag !== "—" ? <span className="rb-badge pending" style={{ background: "var(--gray-900)", color: "white" }}>{r.Tag}</span> : "—"}</td>
-                                <td><button className="rb-btn rb-btn-ghost rb-btn-sm">View Logs</button></td>
-                                <td><button className="rb-btn rb-btn-secondary rb-btn-sm">Edit</button></td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
+const ResidentDirectory = () => {
+    const [directory, setDirectory] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [searchTerm, setSearchTerm] = useState("");
+
+    useEffect(() => {
+        getCommunityDirectory()
+            .then(res => setDirectory(res.data))
+            .catch(err => console.error("Fetch directory error:", err))
+            .finally(() => setLoading(false));
+    }, []);
+
+    const filtered = directory.filter(r =>
+        r.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        r.purok.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    return (
+        <div>
+            <div className="rb-section-header">
+                <div className="rb-section-title">Community Directory</div>
+                <div style={{ fontSize: 12, color: 'var(--gray-500)' }}>
+                    Showing residents who have opted to be visible.
+                </div>
+            </div>
+            <div className="rb-filters">
+                <input
+                    className="rb-search-input"
+                    style={{ width: 400 }}
+                    placeholder="Search by Name or Purok..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                />
+            </div>
+            <div className="rb-card">
+                <div className="rb-table-wrap">
+                    {loading ? (
+                        <div style={{ padding: 40, textAlign: 'center', color: 'var(--gray-500)' }}>Loading directory...</div>
+                    ) : filtered.length === 0 ? (
+                        <div style={{ padding: 40, textAlign: 'center', color: 'var(--gray-500)' }}>No residents found.</div>
+                    ) : (
+                        <table className="rb-table">
+                            <thead>
+                                <tr>
+                                    <th>Profile</th>
+                                    <th>Name</th>
+                                    <th>Purok</th>
+                                    <th>Role</th>
+                                    <th>Verified</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {filtered.map((r, i) => (
+                                    <tr key={i}>
+                                        <td><div className="rb-avatar" style={{ width: 30, height: 30, fontSize: 11 }}>{r.fullName[0]}</div></td>
+                                        <td><div style={{ fontWeight: 600 }}>{r.fullName}</div></td>
+                                        <td>{r.purok || "—"}</td>
+                                        <td style={{ textTransform: 'capitalize' }}>{r.role.toLowerCase()}</td>
+                                        <td>
+                                            {r.verified ?
+                                                <span className="rb-badge green" style={{ fontSize: 10 }}>Verified</span> :
+                                                <span className="rb-badge pending" style={{ fontSize: 10 }}>Unverified</span>
+                                            }
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    )}
+                </div>
             </div>
         </div>
-    </div>
-);
+    );
+};
+
+const OfficialProfile = ({ user }) => {
+    const [visibility, setVisibility] = useState(user?.profileVisibility || "OFFICIALS");
+    const [saving, setSaving] = useState(false);
+
+    const handleSave = async () => {
+        setSaving(true);
+        try {
+            await updateProfile({ ...user, profileVisibility: visibility });
+            alert("Profile visibility updated!");
+        } catch (err) {
+            console.error(err);
+            alert("Failed to update visibility.");
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    return (
+        <div style={{ maxWidth: 600 }}>
+            <div className="rb-section-title">Official Profile Settings</div>
+            <div className="rb-card">
+                <div className="rb-card-header"><div className="rb-card-title">Privacy & Visibility</div></div>
+                <div className="rb-card-body">
+                    <div style={{ marginBottom: 16 }}>
+                        <label className="rb-label">Directory Visibility</label>
+                        <select
+                            className="rb-input"
+                            value={visibility}
+                            onChange={(e) => setVisibility(e.target.value)}
+                        >
+                            <option value="PRIVATE">Private (Searchable by no one)</option>
+                            <option value="OFFICIALS">Officials Only (Searchable by other Officials)</option>
+                            <option value="RESIDENTS">All Residents (Searchable by everyone)</option>
+                        </select>
+                        <p style={{ fontSize: 11, color: "var(--gray-500)", marginTop: 8 }}>
+                            As an official, "Officials Only" is often recommended so residents can find you if needed,
+                            but you can set it to Private if you wish to remain hidden from the community directory.
+                        </p>
+                    </div>
+                    <button
+                        className="rb-btn rb-btn-primary"
+                        onClick={handleSave}
+                        disabled={saving}
+                        style={{ width: "100%" }}
+                    >
+                        {saving ? "Saving..." : "Save Visibility Settings"}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
 
 // ---- MAIN EXPORT ----
 export default function DashboardOfficial({ user }) {
@@ -281,7 +368,7 @@ export default function DashboardOfficial({ user }) {
         announcements: <div className="rb-empty"><div className="rb-empty-icon"><Megaphone size={48} /></div><div className="rb-empty-text">Announcement Creation Panel</div></div>,
         resources: <div className="rb-empty"><div className="rb-empty-icon"><Package size={48} /></div><div className="rb-empty-text">Inventory & Resource Module</div></div>,
         logs: <div className="rb-empty"><div className="rb-empty-icon"><ClipboardList size={48} /></div><div className="rb-empty-text">System Performance & Logs</div></div>,
-        profile: <div className="rb-empty"><div className="rb-empty-icon"><User size={48} /></div><div className="rb-empty-text">Official Settings</div></div>,
+        profile: <OfficialProfile user={user} />,
     };
 
     const titles = {
